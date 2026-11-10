@@ -3,7 +3,7 @@ project:
   output-dir: docs          # GitHub Pages: Settings → Pages → Deploy from branch → main /docs
 
 website:
-  title: "Steve Kemboi"
+  title: "Stephen Kemboi"
   description: "Robust pricing, nonlinear affine processes, and derivatives under uncertainty."
   site-url: https://skkemboi.github.io
   navbar:
