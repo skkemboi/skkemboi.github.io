@@ -21,7 +21,7 @@ Most pricing models assume we know their parameters exactly: how fast interest r
 
 I work with **nonlinear affine processes**, a framework that keeps the tractability of classic models such as Cox–Ingersoll–Ross while letting the parameters be uncertain. I apply it to **currency options** and **weather derivatives**.
 
-I am advised by Dr. Tolulope Fadina at the University of Illinois Urbana-Champaign. Before UIUC I trained at AIMS (University of Cape Town) and Michigan State University (M.S. Industrial Mathematics).
+I am advised by Dr. Tolulope Fadina at the University of Illinois Urbana-Champaign. Before UIUC I trained at AIMS (University of Cape Coast) and Michigan State University (M.S. Industrial Mathematics).
 
 [More about my research →](research.qmd)
 
