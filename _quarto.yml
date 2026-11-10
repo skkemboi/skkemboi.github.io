@@ -20,7 +20,7 @@ website:
       - icon: rss
         href: blog.xml
   page-footer:
-    center: "© 2026 Steve Kemboi · Department of Mathematics, University of Illinois Urbana-Champaign"
+    center: "© 2026 Stephen Kemboi · Department of Mathematics, University of Illinois Urbana-Champaign"
 
 format:
   html:
