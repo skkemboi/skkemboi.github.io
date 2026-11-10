@@ -27,7 +27,7 @@ format:
     theme:
       light: [cosmo, styles.scss]
     toc: true
-    code-fold: true
+    code-fold: false
     code-summary: "Show the code"
     html-math-method: katex
     fig-align: center
