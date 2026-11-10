@@ -1,5 +1,5 @@
 ---
-title: "Steve Kemboi"
+title: "Stephen Kemboi"
 subtitle: "PhD student in Mathematics · Actuarial Science & Risk Analytics · UIUC"
 toc: false
 listing:
