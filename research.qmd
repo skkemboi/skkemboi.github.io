@@ -1,0 +1,37 @@
+---
+title: "Research"
+---
+
+## The big picture
+
+A pricing model is a machine. Feed it parameters and it returns a price. The trouble is that the parameters are **estimates**, and small changes in them can move the price a lot. Robust pricing replaces the single number with an **interval of prices**: the cheapest and the most expensive values consistent with everything we believe about the parameters.
+
+## 1. Nonlinear affine processes
+
+Affine models such as Vasicek, Cox–Ingersoll–Ross (CIR) and Heston are the workhorses of interest-rate and volatility modelling because their prices come in near closed form. Fadina, Neufeld & Schmidt (2019) showed how to keep that structure while letting the drift and volatility parameters move inside an **uncertainty set**. Prices then come from a *nonlinear* expectation, the worst or best case over all admissible parameter paths.
+
+**Questions I work on:** how to estimate the uncertainty set from data, how to check the nonlinear Feller condition (which keeps rates positive), and how to compute the price bounds efficiently.
+
+*Start here:* [Post 1](posts/01-cir-from-coin-flips/index.qmd) · [Post 2](posts/02-nonlinear-affine/index.qmd)
+
+## 2. Robust currency option pricing
+
+A currency option depends on *two* interest rates (domestic and foreign) and on the exchange-rate volatility. My current project builds on the stochastic-volatility FX option literature, starting from Melino & Turnbull (1991), and recasts it in the nonlinear CIR framework. The goal is option price bounds that stay honest about parameter uncertainty.
+
+*Start here:* [Post 3](posts/03-robust-fx-options/index.qmd)
+
+## 3. Weather derivatives
+
+Temperature-based contracts (heating and cooling degree-day options) protect farms, utilities and insurers against weather risk. Temperature models are mean-reverting and seasonal, and their parameters are very uncertain, which makes them a natural next application of the same robust machinery.
+
+## Methods and tools
+
+Stochastic calculus · nonlinear (sublinear) expectations · HJB / Black–Scholes–Barenblatt PDEs · Fourier pricing (Gil-Pelaez inversion) · maximum-likelihood estimation with constraints · Python, R, MATLAB.
+
+## Key references
+
+- Cox, Ingersoll & Ross (1985). A theory of the term structure of interest rates. *Econometrica*.
+- Avellaneda, Levy & Parás (1995). Pricing and hedging derivative securities in markets with uncertain volatilities. *Applied Mathematical Finance*.
+- Peng (2007). G-expectation, G-Brownian motion and related stochastic calculus of Itô type.
+- Fadina, Neufeld & Schmidt (2019). Affine processes under parameter uncertainty. *Probability, Uncertainty and Quantitative Risk*.
+- Melino & Turnbull (1991). The pricing of foreign currency options. *Canadian Journal of Economics*.

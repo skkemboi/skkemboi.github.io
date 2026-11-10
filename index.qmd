@@ -1,0 +1,33 @@
+---
+title: "Steve Kemboi"
+subtitle: "PhD student in Mathematics · Actuarial Science & Risk Analytics · UIUC"
+toc: false
+listing:
+  id: recent
+  contents: posts
+  sort: "date desc"
+  type: default
+  max-items: 3
+  fields: [date, title, description]
+---
+
+::: {.hero}
+[I study how to price financial and insurance risk **when we are not sure our model is right**.]{.lead}
+:::
+
+Most pricing models assume we know their parameters exactly: how fast interest rates pull back to normal, how volatile a currency is. In practice, those numbers are estimated from noisy data and they drift over time. My research asks a simple question:
+
+> *If the parameters are only known to lie in a range, what range of prices is justified, and how do we compute it?*
+
+I work with **nonlinear affine processes**, a framework that keeps the tractability of classic models such as Cox–Ingersoll–Ross while letting the parameters be uncertain. I apply it to **currency options** and **weather derivatives**.
+
+I am advised by Dr. Tolulope Fadina at the University of Illinois Urbana-Champaign. Before UIUC I trained at AIMS (University of Cape Town) and Michigan State University (M.S. Industrial Mathematics).
+
+[More about my research →](research.qmd)
+
+## Latest posts
+
+The blog explains my research one small step at a time, with code and plots you can re-run.
+
+::: {#recent}
+:::

@@ -1,0 +1,37 @@
+project:
+  type: website
+  output-dir: docs          # GitHub Pages: Settings → Pages → Deploy from branch → main /docs
+
+website:
+  title: "Steve Kemboi"
+  description: "Robust pricing, nonlinear affine processes, and derivatives under uncertainty."
+  site-url: https://yourusername.github.io
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: research.qmd
+        text: Research
+      - href: blog.qmd
+        text: Blog
+    right:
+      - icon: github
+        href: https://github.com/yourusername
+      - icon: rss
+        href: blog.xml
+  page-footer:
+    center: "© 2026 Steve Kemboi · Department of Mathematics, University of Illinois Urbana-Champaign"
+
+format:
+  html:
+    theme:
+      light: [cosmo, styles.scss]
+    toc: true
+    code-fold: true
+    code-summary: "Show the code"
+    html-math-method: katex
+    fig-align: center
+
+execute:
+  freeze: auto              # plots are computed once and stored in _freeze/
+  warning: false

@@ -1,0 +1,15 @@
+/*-- scss:defaults --*/
+$primary: #1f3a5f;
+$link-color: #c0632b;
+$font-family-sans-serif: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+$headings-font-weight: 600;
+
+/*-- scss:rules --*/
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');
+
+.navbar { background-color: $primary !important; }
+h2 { margin-top: 2.2rem; border-bottom: 1px solid #e5e7eb; padding-bottom: .3rem; }
+.step { color: #c0632b; font-weight: 600; text-transform: uppercase; font-size: .8rem; letter-spacing: .06em; }
+.takeaway { background: #f4f7fb; border-left: 4px solid $primary; padding: .9rem 1.1rem; margin: 1.5rem 0; border-radius: 4px; }
+.hero { padding: 1rem 0 .5rem; }
+.hero .lead { font-size: 1.2rem; color: #374151; }
