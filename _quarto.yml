@@ -3,9 +3,9 @@ project:
   output-dir: docs          # GitHub Pages: Settings → Pages → Deploy from branch → main /docs
 
 website:
-  title: "Stephen Kemboi"
+  title: "Steve Kemboi"
   description: "Robust pricing, nonlinear affine processes, and derivatives under uncertainty."
-  site-url: https://yourusername.github.io
+  site-url: https://skkemboi.github.io
   navbar:
     left:
       - href: index.qmd
@@ -16,7 +16,7 @@ website:
         text: Blog
     right:
       - icon: github
-        href: https://github.com/yourusername
+        href: https://github.com/skkemboi
       - icon: rss
         href: blog.xml
   page-footer:

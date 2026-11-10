@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-11-11">
+<meta name="description" content="A currency option from the ground up: the payoff, the Garman–Kohlhagen price, and what changes when volatility is only known to lie in a range.">
+
+<title>Pricing currency options when the model is uncertain – Steve Kemboi</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-5f3e6f26d43d4cc1bcd1b92bb4f1ba68.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Steve Kemboi</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../research.html"> 
+<span class="menu-text">Research</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../blog.html"> 
+<span class="menu-text">Blog</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/skkemboi"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="../../blog.xml"> <i class="bi bi-rss" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+            <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#step-1-what-is-a-currency-option" id="toc-step-1-what-is-a-currency-option" class="nav-link active" data-scroll-target="#step-1-what-is-a-currency-option">Step 1 · What is a currency option?</a></li>
+  <li><a href="#step-2-why-fx-is-different-two-interest-rates" id="toc-step-2-why-fx-is-different-two-interest-rates" class="nav-link" data-scroll-target="#step-2-why-fx-is-different-two-interest-rates">Step 2 · Why FX is different: two interest rates</a></li>
+  <li><a href="#step-3-where-my-project-starts" id="toc-step-3-where-my-project-starts" class="nav-link" data-scroll-target="#step-3-where-my-project-starts">Step 3 · Where my project starts</a></li>
+  <li><a href="#step-4-easy-case-a-plain-call" id="toc-step-4-easy-case-a-plain-call" class="nav-link" data-scroll-target="#step-4-easy-case-a-plain-call">Step 4 · Easy case: a plain call</a></li>
+  <li><a href="#step-5-interesting-case-a-butterfly-spread" id="toc-step-5-interesting-case-a-butterfly-spread" class="nav-link" data-scroll-target="#step-5-interesting-case-a-butterfly-spread">Step 5 · Interesting case: a butterfly spread</a></li>
+  <li><a href="#step-6-where-this-is-going" id="toc-step-6-where-this-is-going" class="nav-link" data-scroll-target="#step-6-where-this-is-going">Step 6 · Where this is going</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Pricing currency options when the model is uncertain</h1>
+<p class="subtitle lead">Part 3 · Two interest rates, one exchange rate, and an honest price range</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">FX options</div>
+    <div class="quarto-category">uncertain volatility</div>
+    <div class="quarto-category">robust pricing</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    A currency option from the ground up: the payoff, the Garman–Kohlhagen price, and what changes when volatility is only known to lie in a range.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 11, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>In <a href="../../posts/02-nonlinear-affine/index.html">Part 2</a> we priced bonds when the interest-rate model’s parameters were only known to lie in a box. Now we move to the application at the centre of my current project: <strong>currency (FX) options</strong>.</p>
+<section id="step-1-what-is-a-currency-option" class="level2">
+<h2 class="anchored" data-anchor-id="step-1-what-is-a-currency-option">Step 1 · What is a currency option?</h2>
+<p>A US company will receive €1 million in a year. If the euro weakens, it loses money in dollar terms. It can protect itself with an FX option.</p>
+<p>A <strong>call on EUR/USD with strike <span class="math inline">K</span></strong> gives the right, not the obligation, to buy €1 at <span class="math inline">K</span> dollars at time <span class="math inline">T</span>. If the exchange rate ends at <span class="math inline">S_T</span>, the payoff is</p>
+<p><span class="math display">
+\text{payoff} = \max(S_T - K,\ 0).
+</span></p>
+<div id="cell-fig-payoff" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>S <span class="op">=</span> np.linspace(<span class="fl">0.9</span>, <span class="fl">1.3</span>, <span class="dv">400</span>)<span class="op">;</span> K <span class="op">=</span> <span class="fl">1.10</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>plt.plot(S, np.maximum(S <span class="op">-</span> K, <span class="dv">0</span>), color<span class="op">=</span>NAVY, lw<span class="op">=</span><span class="fl">2.2</span>, label<span class="op">=</span><span class="st">"call: max(S − K, 0)"</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>plt.plot(S, np.maximum(K <span class="op">-</span> S, <span class="dv">0</span>), color<span class="op">=</span>ORANGE, lw<span class="op">=</span><span class="fl">2.2</span>, label<span class="op">=</span><span class="st">"put: max(K − S, 0)"</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>plt.axvline(K, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">":"</span>, lw<span class="op">=</span><span class="dv">1</span>)<span class="op">;</span> plt.text(K, <span class="fl">.19</span>, <span class="st">" strike K = 1.10"</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"EUR/USD at maturity ($ per €)"</span>)<span class="op">;</span> plt.ylabel(<span class="st">"payoff ($ per €)"</span>)<span class="op">;</span> plt.legend()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-payoff" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-payoff-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-payoff-output-1.png" width="687" height="365" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-payoff-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Payoffs at maturity, per €1: a call (right to buy euros at K = 1.10) and a put (right to sell). The option is worth exercising only on one side of the strike.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="step-2-why-fx-is-different-two-interest-rates" class="level2">
+<h2 class="anchored" data-anchor-id="step-2-why-fx-is-different-two-interest-rates">Step 2 · Why FX is different: two interest rates</h2>
+<p>Holding euros earns the <strong>euro</strong> interest rate <span class="math inline">r_f</span> (foreign), while dollars earn the <strong>dollar</strong> rate <span class="math inline">r_d</span> (domestic). A currency therefore behaves like a stock that pays a continuous dividend <span class="math inline">r_f</span>. Under the pricing measure the exchange rate follows</p>
+<p><span class="math display">
+dS_t = (r_d - r_f)\,S_t\,dt + \sigma\, S_t\, dW_t .
+</span></p>
+<p>With constant <span class="math inline">r_d, r_f, \sigma</span> this gives the <strong>Garman–Kohlhagen (1983)</strong> formula, the Black–Scholes formula for currencies:</p>
+<p><span class="math display">
+C = S_0 e^{-r_f T}\,N(d_1) - K e^{-r_d T}\,N(d_2), \qquad d_{1,2} = \frac{\ln(S_0/K) + (r_d - r_f \pm \tfrac12\sigma^2)T}{\sigma\sqrt T}.
+</span></p>
+<div id="cell-fig-gk" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> gk_call(S, K, T, rd, rf, sig):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    d1 <span class="op">=</span> (np.log(S <span class="op">/</span> K) <span class="op">+</span> (rd <span class="op">-</span> rf <span class="op">+</span> <span class="fl">0.5</span> <span class="op">*</span> sig<span class="op">**</span><span class="dv">2</span>) <span class="op">*</span> T) <span class="op">/</span> (sig <span class="op">*</span> np.sqrt(T))<span class="op">;</span> d2 <span class="op">=</span> d1 <span class="op">-</span> sig <span class="op">*</span> np.sqrt(T)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> S <span class="op">*</span> np.exp(<span class="op">-</span>rf <span class="op">*</span> T) <span class="op">*</span> norm.cdf(d1) <span class="op">-</span> K <span class="op">*</span> np.exp(<span class="op">-</span>rd <span class="op">*</span> T) <span class="op">*</span> norm.cdf(d2)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>rd, rf, T <span class="op">=</span> <span class="fl">0.045</span>, <span class="fl">0.025</span>, <span class="fl">1.0</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> sig, c <span class="kw">in</span> [(<span class="fl">0.06</span>, TEAL), (<span class="fl">0.09</span>, NAVY), (<span class="fl">0.12</span>, ORANGE)]:</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    plt.plot(S, gk_call(S, K, T, rd, rf, sig), color<span class="op">=</span>c, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"σ = </span><span class="sc">{</span>sig<span class="sc">:.0%}</span><span class="ss">"</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>plt.plot(S, np.maximum(S <span class="op">-</span> K, <span class="dv">0</span>), <span class="st">"k:"</span>, lw<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"payoff"</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"EUR/USD today"</span>)<span class="op">;</span> plt.ylabel(<span class="st">"call price ($ per €)"</span>)<span class="op">;</span> plt.legend()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-gk" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-gk-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-gk-output-1.png" width="678" height="365" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-gk-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Garman–Kohlhagen call prices one year before maturity for three volatilities (r_d = 4.5%, r_f = 2.5%). Higher volatility means a more valuable option, because the upside is unlimited while the downside is capped at zero.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="step-3-where-my-project-starts" class="level2">
+<h2 class="anchored" data-anchor-id="step-3-where-my-project-starts">Step 3 · Where my project starts</h2>
+<p>Garman–Kohlhagen assumes <strong>constant</strong> rates and volatility. Real FX markets violate both: volatility clusters and moves randomly, and both interest rates move. Classic work by Melino &amp; Turnbull (1991) moved toward stochastic volatility for currency options. My project asks the next question: <em>the volatility and rate dynamics themselves have uncertain parameters</em>, so we model them with the nonlinear CIR family from Part 2 and look for price <strong>bounds</strong>.</p>
+<p>To see the main effect clearly, this post isolates one ingredient: <strong>volatility known only to lie in a range</strong> <span class="math inline">\sigma \in [\underline\sigma, \overline\sigma]</span>, possibly changing over time. Here we use <span class="math inline">[6\%, 12\%]</span>.</p>
+</section>
+<section id="step-4-easy-case-a-plain-call" class="level2">
+<h2 class="anchored" data-anchor-id="step-4-easy-case-a-plain-call">Step 4 · Easy case: a plain call</h2>
+<p>The robust upper price is the supremum over all volatility paths in the band. By the same dynamic-programming argument as in Part 2, it solves a nonlinear PDE, the <strong>Black–Scholes–Barenblatt equation</strong> (Avellaneda, Levy &amp; Parás 1995):</p>
+<p><span class="math display">
+\partial_t V + \tfrac12\,\Sigma(\Gamma)^2 S^2\,\partial_{SS}V + (r_d - r_f) S\,\partial_S V - r_d V = 0,
+\qquad
+\Sigma(\Gamma) = \begin{cases}\overline\sigma &amp; \Gamma = \partial_{SS}V \ge 0\\ \underline\sigma &amp; \Gamma &lt; 0\end{cases}
+</span></p>
+<p>(for the lower price, swap the roles of <span class="math inline">\overline\sigma</span> and <span class="math inline">\underline\sigma</span>). Nature picks high volatility wherever the option is convex and low volatility wherever it is concave.</p>
+<p>A call is convex <strong>everywhere</strong>, so the upper price is just Garman–Kohlhagen at <span class="math inline">\overline\sigma</span> and the lower is GK at <span class="math inline">\underline\sigma</span>. This is the same “corner” story as the bond in Part 2.</p>
+<div id="303c25bd" class="cell" data-execution_count="4">
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> bsb(payoff, S0grid, T, rd, rf, slo, shi, upper<span class="op">=</span><span class="va">True</span>, nx<span class="op">=</span><span class="dv">600</span>, dt<span class="op">=</span><span class="fl">2e-4</span>):</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Black–Scholes–Barenblatt in log-spot, explicit finite differences."""</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> np.linspace(np.log(<span class="fl">0.6</span>), np.log(<span class="fl">1.9</span>), nx)<span class="op">;</span> dx <span class="op">=</span> x[<span class="dv">1</span>] <span class="op">-</span> x[<span class="dv">0</span>]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    V <span class="op">=</span> payoff(np.exp(x))</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">int</span>(T <span class="op">/</span> dt)):</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        Vx <span class="op">=</span> np.gradient(V, dx)<span class="op">;</span> Vxx <span class="op">=</span> np.zeros(nx)<span class="op">;</span> Vxx[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>] <span class="op">=</span> (V[<span class="dv">2</span>:] <span class="op">-</span> <span class="dv">2</span> <span class="op">*</span> V[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> V[:<span class="op">-</span><span class="dv">2</span>]) <span class="op">/</span> dx<span class="op">**</span><span class="dv">2</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        gamma <span class="op">=</span> Vxx <span class="op">-</span> Vx                                   <span class="co"># sign of S² ∂_SS V</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        sig <span class="op">=</span> np.where(gamma <span class="op">&gt;=</span> <span class="dv">0</span>, shi, slo) <span class="cf">if</span> upper <span class="cf">else</span> np.where(gamma <span class="op">&gt;=</span> <span class="dv">0</span>, slo, shi)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        V <span class="op">=</span> V <span class="op">+</span> dt <span class="op">*</span> (<span class="fl">0.5</span> <span class="op">*</span> sig<span class="op">**</span><span class="dv">2</span> <span class="op">*</span> (Vxx <span class="op">-</span> Vx) <span class="op">+</span> (rd <span class="op">-</span> rf) <span class="op">*</span> Vx <span class="op">-</span> rd <span class="op">*</span> V)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        V[<span class="dv">0</span>] <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> V[<span class="dv">1</span>] <span class="op">-</span> V[<span class="dv">2</span>]<span class="op">;</span> V[<span class="op">-</span><span class="dv">1</span>] <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> V[<span class="op">-</span><span class="dv">2</span>] <span class="op">-</span> V[<span class="op">-</span><span class="dv">3</span>]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.interp(np.log(S0grid), x, V)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>slo, shi <span class="op">=</span> <span class="fl">0.06</span>, <span class="fl">0.12</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>call <span class="op">=</span> <span class="kw">lambda</span> s: np.maximum(s <span class="op">-</span> K, <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div id="cell-fig-call-bounds" class="cell" data-execution_count="5">
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>S0 <span class="op">=</span> np.linspace(<span class="fl">0.95</span>, <span class="fl">1.25</span>, <span class="dv">120</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>up, dn <span class="op">=</span> bsb(call, S0, T, rd, rf, slo, shi, <span class="va">True</span>), bsb(call, S0, T, rd, rf, slo, shi, <span class="va">False</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>plt.fill_between(S0, dn, up, color<span class="op">=</span>ORANGE, alpha<span class="op">=</span><span class="fl">.25</span>, label<span class="op">=</span><span class="st">"robust band (PDE)"</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>plt.plot(S0, gk_call(S0, K, T, rd, rf, shi), <span class="st">"--"</span>, color<span class="op">=</span>ORANGE, lw<span class="op">=</span><span class="fl">1.6</span>, label<span class="op">=</span><span class="st">"GK at σ = 12%"</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>plt.plot(S0, gk_call(S0, K, T, rd, rf, slo), <span class="st">"--"</span>, color<span class="op">=</span>TEAL, lw<span class="op">=</span><span class="fl">1.6</span>, label<span class="op">=</span><span class="st">"GK at σ = 6%"</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"EUR/USD today"</span>)<span class="op">;</span> plt.ylabel(<span class="st">"call price ($ per €)"</span>)<span class="op">;</span> plt.legend()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-call-bounds" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-call-bounds-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-call-bounds-output-1.png" width="687" height="365" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-call-bounds-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Robust bounds for the call (shaded, computed by the nonlinear PDE) line up exactly with Garman–Kohlhagen at the edges of the volatility band (dashed).
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="step-5-interesting-case-a-butterfly-spread" class="level2">
+<h2 class="anchored" data-anchor-id="step-5-interesting-case-a-butterfly-spread">Step 5 · Interesting case: a butterfly spread</h2>
+<p>Now take a payoff that is <strong>convex in some places and concave in others</strong>. A <em>butterfly</em> (long a 1.00 call, short two 1.10 calls, long a 1.20 call) pays off if the euro ends up near 1.10. Exporters use structures like this when they expect a stable exchange rate.</p>
+<p>For such a payoff nature’s worst choice of volatility <strong>switches with the state</strong>: high where the price is convex (the wings) and low where it is concave (near 1.10). No single constant volatility reproduces this.</p>
+<div id="cell-fig-butterfly" class="cell" data-execution_count="6">
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>K1, K2, K3 <span class="op">=</span> <span class="fl">1.00</span>, <span class="fl">1.10</span>, <span class="fl">1.20</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>fly <span class="op">=</span> <span class="kw">lambda</span> s: np.maximum(s <span class="op">-</span> K1, <span class="dv">0</span>) <span class="op">-</span> <span class="dv">2</span> <span class="op">*</span> np.maximum(s <span class="op">-</span> K2, <span class="dv">0</span>) <span class="op">+</span> np.maximum(s <span class="op">-</span> K3, <span class="dv">0</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>fly_gk <span class="op">=</span> <span class="kw">lambda</span> s, sig: gk_call(s, K1, T, rd, rf, sig) <span class="op">-</span> <span class="dv">2</span> <span class="op">*</span> gk_call(s, K2, T, rd, rf, sig) <span class="op">+</span> gk_call(s, K3, T, rd, rf, sig)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>up, dn <span class="op">=</span> bsb(fly, S0, T, rd, rf, slo, shi, <span class="va">True</span>), bsb(fly, S0, T, rd, rf, slo, shi, <span class="va">False</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>const <span class="op">=</span> np.array([fly_gk(S0, s) <span class="cf">for</span> s <span class="kw">in</span> np.linspace(slo, shi, <span class="dv">25</span>)])</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="fl">11.5</span>, <span class="dv">4</span>), gridspec_kw<span class="op">=</span>{<span class="st">"width_ratios"</span>: [<span class="dv">1</span>, <span class="fl">1.6</span>]})</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>Sp <span class="op">=</span> np.linspace(<span class="fl">0.9</span>, <span class="fl">1.3</span>, <span class="dv">400</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].plot(Sp, fly(Sp), color<span class="op">=</span>NAVY, lw<span class="op">=</span><span class="fl">2.2</span>)<span class="op">;</span> axes[<span class="dv">0</span>].set_title(<span class="st">"payoff at maturity"</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_xlabel(<span class="st">"EUR/USD at maturity"</span>)<span class="op">;</span> axes[<span class="dv">0</span>].set_ylabel(<span class="st">"$ per €"</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].fill_between(S0, dn, up, color<span class="op">=</span>ORANGE, alpha<span class="op">=</span><span class="fl">.25</span>, label<span class="op">=</span><span class="st">"robust band (PDE)"</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> c <span class="kw">in</span> const: axes[<span class="dv">1</span>].plot(S0, c, color<span class="op">=</span>NAVY, alpha<span class="op">=</span><span class="fl">.25</span>, lw<span class="op">=</span><span class="fl">.8</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].plot([], [], color<span class="op">=</span>NAVY, alpha<span class="op">=</span><span class="fl">.5</span>, label<span class="op">=</span><span class="st">"constant σ ∈ [6%, 12%]"</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>j <span class="op">=</span> np.argmin(<span class="bu">abs</span>(S0 <span class="op">-</span> <span class="fl">1.10</span>))</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].annotate(<span class="st">""</span>, xy<span class="op">=</span>(<span class="fl">1.10</span>, up[j]), xytext<span class="op">=</span>(<span class="fl">1.10</span>, const.<span class="bu">max</span>(<span class="dv">0</span>)[j]), arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">"-&gt;"</span>, color<span class="op">=</span><span class="st">"#be123c"</span>, lw<span class="op">=</span><span class="fl">1.6</span>))</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].annotate(<span class="st">""</span>, xy<span class="op">=</span>(<span class="fl">1.10</span>, dn[j]), xytext<span class="op">=</span>(<span class="fl">1.10</span>, const.<span class="bu">min</span>(<span class="dv">0</span>)[j]), arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">"-&gt;"</span>, color<span class="op">=</span><span class="st">"#be123c"</span>, lw<span class="op">=</span><span class="fl">1.6</span>))</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">"price one year before maturity"</span>)<span class="op">;</span> axes[<span class="dv">1</span>].set_xlabel(<span class="st">"EUR/USD today"</span>)<span class="op">;</span> axes[<span class="dv">1</span>].legend(fontsize<span class="op">=</span><span class="dv">9</span>)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"At S = 1.10: constant-σ prices span </span><span class="sc">{</span>const<span class="sc">.</span><span class="bu">min</span>(<span class="dv">0</span>)[j]<span class="sc">:.4f}</span><span class="ss">–</span><span class="sc">{</span>const<span class="sc">.</span><span class="bu">max</span>(<span class="dv">0</span>)[j]<span class="sc">:.4f}</span><span class="ss">;"</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f" robust range is </span><span class="sc">{</span>dn[j]<span class="sc">:.4f}</span><span class="ss">–</span><span class="sc">{</span>up[j]<span class="sc">:.4f}</span><span class="ss"> ($ per €)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-butterfly" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-butterfly-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-butterfly-output-1.png" width="1092" height="372" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-butterfly-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Butterfly spread. Thin lines: Garman–Kohlhagen prices for 25 constant volatilities between 6% and 12%. Shaded: the robust band from the nonlinear PDE, which is strictly wider than the envelope of all constant-volatility prices (red arrows).
+</figcaption>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>At S = 1.10: constant-σ prices span 0.0275–0.0472; robust range is 0.0193–0.0531 ($ per €)</code></pre>
+</div>
+</div>
+<p><strong>What to notice:</strong> the robust band is visibly wider than anything you get by trying constant volatilities one at a time. A trader who stress-tests by “re-running the model at 6% and at 12%” would <strong>underestimate</strong> model risk on this product. The robust price is what it actually costs to hedge safely when the volatility could be anywhere in the band.</p>
+</section>
+<section id="step-6-where-this-is-going" class="level2">
+<h2 class="anchored" data-anchor-id="step-6-where-this-is-going">Step 6 · Where this is going</h2>
+<div id="cell-fig-roadmap" class="cell" data-execution_count="7">
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">2.6</span>))<span class="op">;</span> ax.axis(<span class="st">"off"</span>)<span class="op">;</span> ax.set_xlim(<span class="dv">0</span>, <span class="dv">10</span>)<span class="op">;</span> ax.set_ylim(<span class="dv">0</span>, <span class="dv">3</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>boxes <span class="op">=</span> [(<span class="fl">0.2</span>, <span class="st">"Constant σ, r_d, r_f</span><span class="ch">\n</span><span class="st">(Garman–Kohlhagen)"</span>, <span class="st">"white"</span>),</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>         (<span class="fl">2.7</span>, <span class="st">"σ in a band</span><span class="ch">\n</span><span class="st">(BSB equation)</span><span class="ch">\n</span><span class="st">this post"</span>, <span class="st">"#fde7d3"</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>         (<span class="fl">5.2</span>, <span class="st">"σ² follows nonlinear</span><span class="ch">\n</span><span class="st">CIR (Heston-type)"</span>, <span class="st">"white"</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>         (<span class="fl">7.7</span>, <span class="st">"σ², r_d, r_f all</span><span class="ch">\n</span><span class="st">nonlinear CIR"</span>, <span class="st">"white"</span>)]</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> xb, txt, fc <span class="kw">in</span> boxes:</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    ax.add_patch(plt.Rectangle((xb, <span class="fl">.7</span>), <span class="fl">2.1</span>, <span class="fl">1.6</span>, fc<span class="op">=</span>fc, ec<span class="op">=</span>NAVY, lw<span class="op">=</span><span class="fl">1.5</span>, zorder<span class="op">=</span><span class="dv">2</span>))</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    ax.text(xb <span class="op">+</span> <span class="fl">1.05</span>, <span class="fl">1.5</span>, txt, ha<span class="op">=</span><span class="st">"center"</span>, va<span class="op">=</span><span class="st">"center"</span>, fontsize<span class="op">=</span><span class="fl">9.5</span>, zorder<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> xb <span class="kw">in</span> [<span class="fl">2.3</span>, <span class="fl">4.8</span>, <span class="fl">7.3</span>]:</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    ax.annotate(<span class="st">""</span>, xy<span class="op">=</span>(xb <span class="op">+</span> <span class="fl">.4</span>, <span class="fl">1.5</span>), xytext<span class="op">=</span>(xb, <span class="fl">1.5</span>), arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">"-&gt;"</span>, color<span class="op">=</span>ORANGE, lw<span class="op">=</span><span class="dv">2</span>))</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-roadmap" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-roadmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-roadmap-output-1.png" width="689" height="211" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-roadmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: The pieces of the project. This post covered the shaded box; the full model lets the volatility and both interest rates follow nonlinear CIR dynamics.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The next steps replace the simple volatility band with the nonlinear CIR family of Part 2, applied to the variance (a robust Heston model) and to both interest rates. Prices are still computed from nonlinear PDEs, but now in several dimensions, which raises real numerical questions. Later posts will cover those, along with how to estimate the uncertainty box from market data.</p>
+<div class="takeaway">
+<p><strong>Recap, step by step.</strong> FX option payoff (Step 1) → two interest rates and the Garman–Kohlhagen formula (Step 2) → uncertainty in the volatility (Step 3) → for convex payoffs the bounds sit at the edges of the band (Step 4) → for mixed payoffs the robust band is strictly wider than any constant-parameter stress test (Step 5).</p>
+<p><strong>The lesson of the series:</strong> when parameters are uncertain, “try a few values” is not enough. The right answer comes from a nonlinear expectation, and affine structure is what keeps it computable.</p>
+</div>
+<p><em>Previous:</em> <a href="../../posts/02-nonlinear-affine/index.html">Part 2</a></p>
+<p><strong>References.</strong> Garman &amp; Kohlhagen (1983), <em>Journal of International Money and Finance</em> · Avellaneda, Levy &amp; Parás (1995), <em>Applied Mathematical Finance</em> · Melino &amp; Turnbull (1991), <em>Canadian Journal of Economics</em> · Fadina, Neufeld &amp; Schmidt (2019), <em>Probability, Uncertainty and Quantitative Risk</em>.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/skkemboi\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+<p>© 2026 Steve Kemboi · Department of Mathematics, University of Illinois Urbana-Champaign</p>
+</div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

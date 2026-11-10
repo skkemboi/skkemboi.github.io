@@ -1,0 +1,18 @@
+[
+  {
+    "listing": "/index.html",
+    "items": [
+      "/posts/03-robust-fx-options/index.html",
+      "/posts/02-nonlinear-affine/index.html",
+      "/posts/01-cir-from-coin-flips/index.html"
+    ]
+  },
+  {
+    "listing": "/blog.html",
+    "items": [
+      "/posts/01-cir-from-coin-flips/index.html",
+      "/posts/02-nonlinear-affine/index.html",
+      "/posts/03-robust-fx-options/index.html"
+    ]
+  }
+]
