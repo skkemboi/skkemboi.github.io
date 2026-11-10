@@ -27,7 +27,7 @@ I am advised by Dr. Tolulope Fadina at the University of Illinois Urbana-Champai
 
 ## Latest posts
 
-The blog explains my research one small step at a time, with code and plots you can re-run.
+The blog explains my research step by step, using plots and visualizations to make the concepts easier to understand.
 
 ::: {#recent}
 :::
