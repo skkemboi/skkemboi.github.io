@@ -225,3 +225,13 @@ fig.savefig("thumbnail.png", bbox_inches="tight"); plt.close(fig)
 :::
 
 *Previous:* [Part 4](../04-weather-derivatives/index.qmd) · *Next, on April 15:* [Part 6 · Robust stochastic volatility for FX options](../06-robust-heston-fx/index.qmd)
+
+## References
+
+1. Cox, J. C., Ingersoll, J. E., & Ross, S. A. (1985). A theory of the term structure of interest rates. *Econometrica*, 53(2), 385–407. [doi:10.2307/1911242](https://doi.org/10.2307/1911242)
+2. Overbeck, L., & Rydén, T. (1997). Estimation in the Cox–Ingersoll–Ross model. *Econometric Theory*, 13(3), 430–461. [Cambridge Core](https://www.cambridge.org/core/journals/econometric-theory/article/estimation-in-the-coxingersollross-model/EECD5AE4A1B93DE2E8B3B0E08C68B4DF)
+3. Feller, W. (1951). Two singular diffusion problems. *Annals of Mathematics*, 54(1), 173–182. [doi:10.2307/1969318](https://doi.org/10.2307/1969318)
+4. Fadina, T., Neufeld, A., & Schmidt, T. (2019). Affine processes under parameter uncertainty. *Probability, Uncertainty and Quantitative Risk*, 4, Article 5. [doi:10.1186/s41546-019-0039-1](https://doi.org/10.1186/s41546-019-0039-1) · [arXiv:1806.02912](https://arxiv.org/abs/1806.02912)
+5. Glasserman, P. (2003). *Monte Carlo Methods in Financial Engineering*. Springer. [doi:10.1007/978-0-387-21617-1](https://doi.org/10.1007/978-0-387-21617-1)
+
+*Figures and simulations in this post are my own, made with Python (NumPy, SciPy, Matplotlib). All data are simulated; no market data are used.*

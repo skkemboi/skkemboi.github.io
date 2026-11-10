@@ -69,7 +69,7 @@ plt.xlabel("EUR/USD today"); plt.ylabel("call price ($ per €)"); plt.legend();
 
 ## Step 3 · Where my project starts
 
-Garman–Kohlhagen assumes **constant** rates and volatility. Real FX markets violate both: volatility clusters and moves randomly, and both interest rates move. Classic work by Melino & Turnbull (1991) moved toward stochastic volatility for currency options. My project asks the next question: *the volatility and rate dynamics themselves have uncertain parameters*, so we model them with the nonlinear CIR family from Part 2 and look for price **bounds**.
+Garman–Kohlhagen assumes **constant** rates and volatility. Real FX markets violate both: volatility clusters and moves randomly, and both interest rates move. Classic work by Melino & Turnbull (1990, 1991) showed that letting volatility move randomly helps explain currency option prices. My project asks the next question: *the volatility and rate dynamics themselves have uncertain parameters*, so we model them with the nonlinear CIR family from Part 2 and look for price **bounds**.
 
 To see the main effect clearly, this post isolates one ingredient: **volatility known only to lie in a range** $\sigma \in [\underline\sigma, \overline\sigma]$, possibly changing over time. Here we use $[6\%, 12\%]$.
 
@@ -186,4 +186,12 @@ ax.axis("off"); fig.savefig("thumbnail.png", bbox_inches="tight"); plt.close(fig
 
 *Previous:* [Part 2](../02-nonlinear-affine/index.qmd) · *Next, on February 15:* [Part 4 · Pricing the weather](../04-weather-derivatives/index.qmd)
 
-**References.** Garman & Kohlhagen (1983), *Journal of International Money and Finance* · Avellaneda, Levy & Parás (1995), *Applied Mathematical Finance* · Melino & Turnbull (1991), *Canadian Journal of Economics* · Fadina, Neufeld & Schmidt (2019), *Probability, Uncertainty and Quantitative Risk*.
+## References
+
+1. Garman, M. B., & Kohlhagen, S. W. (1983). Foreign currency option values. *Journal of International Money and Finance*, 2(3), 231–237. [doi:10.1016/S0261-5606(83)80001-1](https://doi.org/10.1016/S0261-5606%2883%2980001-1)
+2. Melino, A., & Turnbull, S. M. (1990). Pricing foreign currency options with stochastic volatility. *Journal of Econometrics*, 45(1–2), 239–265. [doi:10.1016/0304-4076(90)90100-8](https://doi.org/10.1016/0304-4076%2890%2990100-8)
+3. Melino, A., & Turnbull, S. M. (1991). The pricing of foreign currency options. *Canadian Journal of Economics*, 24(2), 251–281. [RePEc record](https://ideas.repec.org/a/cje/issued/v24y1991i2p251-81.html)
+4. Avellaneda, M., Levy, A., & Parás, A. (1995). Pricing and hedging derivative securities in markets with uncertain volatilities. *Applied Mathematical Finance*, 2(2), 73–88. [doi:10.1080/13504869500000005](https://doi.org/10.1080/13504869500000005)
+5. Fadina, T., Neufeld, A., & Schmidt, T. (2019). Affine processes under parameter uncertainty. *Probability, Uncertainty and Quantitative Risk*, 4, Article 5. [doi:10.1186/s41546-019-0039-1](https://doi.org/10.1186/s41546-019-0039-1) · [arXiv:1806.02912](https://arxiv.org/abs/1806.02912)
+
+*Figures and simulations in this post are my own, made with Python (NumPy, SciPy, Matplotlib). All data are simulated; no market data are used.*

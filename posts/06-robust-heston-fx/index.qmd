@@ -195,4 +195,13 @@ Thanks for reading the series. If you work on related problems, I would love to 
 
 *Previous:* [Part 5](../05-estimating-the-box/index.qmd) · *Start of series:* [Part 1](../01-cir-from-coin-flips/index.qmd)
 
-**References.** Heston (1993), *Review of Financial Studies* · Avellaneda, Levy & Parás (1995), *Applied Mathematical Finance* · Fadina, Neufeld & Schmidt (2019), *Probability, Uncertainty and Quantitative Risk*.
+## References
+
+1. Heston, S. L. (1993). A closed-form solution for options with stochastic volatility with applications to bond and currency options. *Review of Financial Studies*, 6(2), 327–343. [doi:10.1093/rfs/6.2.327](https://doi.org/10.1093/rfs/6.2.327)
+2. Melino, A., & Turnbull, S. M. (1990). Pricing foreign currency options with stochastic volatility. *Journal of Econometrics*, 45(1–2), 239–265. [doi:10.1016/0304-4076(90)90100-8](https://doi.org/10.1016/0304-4076%2890%2990100-8)
+3. Avellaneda, M., Levy, A., & Parás, A. (1995). Pricing and hedging derivative securities in markets with uncertain volatilities. *Applied Mathematical Finance*, 2(2), 73–88. [doi:10.1080/13504869500000005](https://doi.org/10.1080/13504869500000005)
+4. Fadina, T., Neufeld, A., & Schmidt, T. (2019). Affine processes under parameter uncertainty. *Probability, Uncertainty and Quantitative Risk*, 4, Article 5. [doi:10.1186/s41546-019-0039-1](https://doi.org/10.1186/s41546-019-0039-1) · [arXiv:1806.02912](https://arxiv.org/abs/1806.02912)
+5. Lord, R., Koekkoek, R., & van Dijk, D. (2010). A comparison of biased simulation schemes for stochastic volatility models. *Quantitative Finance*, 10(2), 177–194. [doi:10.1080/14697680802392496](https://doi.org/10.1080/14697680802392496) · [free version](https://www.ssoar.info/ssoar/handle/document/22127)
+6. Garman, M. B., & Kohlhagen, S. W. (1983). Foreign currency option values. *Journal of International Money and Finance*, 2(3), 231–237. [doi:10.1016/S0261-5606(83)80001-1](https://doi.org/10.1016/S0261-5606%2883%2980001-1)
+
+*Figures and simulations in this post are my own, made with Python (NumPy, SciPy, Matplotlib). All data are simulated; no market data are used.*

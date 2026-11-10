@@ -175,3 +175,13 @@ Everything here assumed we *know* $\kappa$, $\theta$ and $\sigma$. **In the next
 :::
 
 *Next, on December 15:* [Part 2 · What if we don't know the parameters?](../02-nonlinear-affine/index.qmd)
+
+## References
+
+1. Vasicek, O. (1977). An equilibrium characterization of the term structure. *Journal of Financial Economics*, 5(2), 177–188. [doi:10.1016/0304-405X(77)90016-2](https://doi.org/10.1016/0304-405X%2877%2990016-2)
+2. Cox, J. C., Ingersoll, J. E., & Ross, S. A. (1985). A theory of the term structure of interest rates. *Econometrica*, 53(2), 385–407. [doi:10.2307/1911242](https://doi.org/10.2307/1911242)
+3. Feller, W. (1951). Two singular diffusion problems. *Annals of Mathematics*, 54(1), 173–182. [doi:10.2307/1969318](https://doi.org/10.2307/1969318)
+4. Lord, R., Koekkoek, R., & van Dijk, D. (2010). A comparison of biased simulation schemes for stochastic volatility models. *Quantitative Finance*, 10(2), 177–194. [doi:10.1080/14697680802392496](https://doi.org/10.1080/14697680802392496) · [free version](https://www.ssoar.info/ssoar/handle/document/22127)
+5. Glasserman, P. (2003). *Monte Carlo Methods in Financial Engineering*. Springer. [doi:10.1007/978-0-387-21617-1](https://doi.org/10.1007/978-0-387-21617-1)
+
+*Figures and simulations in this post are my own, made with Python (NumPy, SciPy, Matplotlib). All data are simulated; no market data are used.*

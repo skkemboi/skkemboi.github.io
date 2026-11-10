@@ -16,7 +16,7 @@ Affine models such as Vasicek, Cox–Ingersoll–Ross (CIR) and Heston are the w
 
 ## 2. Robust currency option pricing
 
-A currency option depends on *two* interest rates (domestic and foreign) and on the exchange-rate volatility. My current project builds on the stochastic-volatility FX option literature, starting from Melino & Turnbull (1991), and recasts it in the nonlinear CIR framework. The goal is option price bounds that stay honest about parameter uncertainty.
+A currency option depends on *two* interest rates (domestic and foreign) and on the exchange-rate volatility. My current project builds on the stochastic-volatility FX option literature, starting from Melino & Turnbull (1990, 1991), and recasts it in the nonlinear CIR framework. The goal is option price bounds that stay honest about parameter uncertainty.
 
 *Blog posts on this:* Part 3 (January 15) and Part 6 (April 15)
 
@@ -30,8 +30,22 @@ Stochastic calculus · nonlinear (sublinear) expectations · HJB / Black–Schol
 
 ## Key references
 
-- Cox, Ingersoll & Ross (1985). A theory of the term structure of interest rates. *Econometrica*.
-- Avellaneda, Levy & Parás (1995). Pricing and hedging derivative securities in markets with uncertain volatilities. *Applied Mathematical Finance*.
-- Peng (2007). G-expectation, G-Brownian motion and related stochastic calculus of Itô type.
-- Fadina, Neufeld & Schmidt (2019). Affine processes under parameter uncertainty. *Probability, Uncertainty and Quantitative Risk*.
-- Melino & Turnbull (1991). The pricing of foreign currency options. *Canadian Journal of Economics*.
+1. Vasicek, O. (1977). An equilibrium characterization of the term structure. *Journal of Financial Economics*, 5(2), 177–188. [doi:10.1016/0304-405X(77)90016-2](https://doi.org/10.1016/0304-405X%2877%2990016-2)
+2. Cox, J. C., Ingersoll, J. E., & Ross, S. A. (1985). A theory of the term structure of interest rates. *Econometrica*, 53(2), 385–407. [doi:10.2307/1911242](https://doi.org/10.2307/1911242)
+3. Feller, W. (1951). Two singular diffusion problems. *Annals of Mathematics*, 54(1), 173–182. [doi:10.2307/1969318](https://doi.org/10.2307/1969318)
+4. Duffie, D., Filipović, D., & Schachermayer, W. (2003). Affine processes and applications in finance. *Annals of Applied Probability*, 13(3), 984–1053. [doi:10.1214/aoap/1060202833](https://doi.org/10.1214/aoap/1060202833)
+5. Avellaneda, M., Levy, A., & Parás, A. (1995). Pricing and hedging derivative securities in markets with uncertain volatilities. *Applied Mathematical Finance*, 2(2), 73–88. [doi:10.1080/13504869500000005](https://doi.org/10.1080/13504869500000005)
+6. Peng, S. (2007). G-expectation, G-Brownian motion and related stochastic calculus of Itô type. In *Stochastic Analysis and Applications* (Abel Symposium 2005). Springer. [arXiv:math/0601035](https://arxiv.org/abs/math/0601035)
+7. Fadina, T., Neufeld, A., & Schmidt, T. (2019). Affine processes under parameter uncertainty. *Probability, Uncertainty and Quantitative Risk*, 4, Article 5. [doi:10.1186/s41546-019-0039-1](https://doi.org/10.1186/s41546-019-0039-1) · [arXiv:1806.02912](https://arxiv.org/abs/1806.02912)
+8. Garman, M. B., & Kohlhagen, S. W. (1983). Foreign currency option values. *Journal of International Money and Finance*, 2(3), 231–237. [doi:10.1016/S0261-5606(83)80001-1](https://doi.org/10.1016/S0261-5606%2883%2980001-1)
+9. Melino, A., & Turnbull, S. M. (1990). Pricing foreign currency options with stochastic volatility. *Journal of Econometrics*, 45(1–2), 239–265. [doi:10.1016/0304-4076(90)90100-8](https://doi.org/10.1016/0304-4076%2890%2990100-8)
+10. Melino, A., & Turnbull, S. M. (1991). The pricing of foreign currency options. *Canadian Journal of Economics*, 24(2), 251–281. [RePEc record](https://ideas.repec.org/a/cje/issued/v24y1991i2p251-81.html)
+11. Heston, S. L. (1993). A closed-form solution for options with stochastic volatility with applications to bond and currency options. *Review of Financial Studies*, 6(2), 327–343. [doi:10.1093/rfs/6.2.327](https://doi.org/10.1093/rfs/6.2.327)
+12. Alaton, P., Djehiche, B., & Stillberger, D. (2002). On modelling and pricing weather derivatives. *Applied Mathematical Finance*, 9(1), 1–20. [doi:10.1080/13504860210132897](https://doi.org/10.1080/13504860210132897)
+13. Benth, F. E., & Šaltytė Benth, J. (2007). The volatility of temperature and pricing of weather derivatives. *Quantitative Finance*, 7(5), 553–561. [doi:10.1080/14697680601155334](https://doi.org/10.1080/14697680601155334)
+
+<!-- Acknowledgement: uncomment and adjust once your advisor approves the wording
+## Acknowledgements
+
+This work is supported by the UIUC Campus Research Board and supervised by Dr. Tolulope Fadina.
+-->

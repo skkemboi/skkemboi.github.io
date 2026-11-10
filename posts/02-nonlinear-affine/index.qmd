@@ -227,4 +227,13 @@ ax.axis("off"); fig.savefig("thumbnail.png", bbox_inches="tight"); plt.close(fig
 
 *Previous:* [Part 1](../01-cir-from-coin-flips/index.qmd) · *Next, on January 15:* [Part 3 · Pricing currency options under uncertainty](../03-robust-fx-options/index.qmd)
 
-**Reference:** T. Fadina, A. Neufeld, T. Schmidt (2019). Affine processes under parameter uncertainty. *Probability, Uncertainty and Quantitative Risk* 4:5.
+## References
+
+1. Fadina, T., Neufeld, A., & Schmidt, T. (2019). Affine processes under parameter uncertainty. *Probability, Uncertainty and Quantitative Risk*, 4, Article 5. [doi:10.1186/s41546-019-0039-1](https://doi.org/10.1186/s41546-019-0039-1) · [arXiv:1806.02912](https://arxiv.org/abs/1806.02912)
+2. Cox, J. C., Ingersoll, J. E., & Ross, S. A. (1985). A theory of the term structure of interest rates. *Econometrica*, 53(2), 385–407. [doi:10.2307/1911242](https://doi.org/10.2307/1911242)
+3. Duffie, D., Filipović, D., & Schachermayer, W. (2003). Affine processes and applications in finance. *Annals of Applied Probability*, 13(3), 984–1053. [doi:10.1214/aoap/1060202833](https://doi.org/10.1214/aoap/1060202833)
+4. Peng, S. (2007). G-expectation, G-Brownian motion and related stochastic calculus of Itô type. In *Stochastic Analysis and Applications* (Abel Symposium 2005). Springer. [arXiv:math/0601035](https://arxiv.org/abs/math/0601035)
+5. Avellaneda, M., Levy, A., & Parás, A. (1995). Pricing and hedging derivative securities in markets with uncertain volatilities. *Applied Mathematical Finance*, 2(2), 73–88. [doi:10.1080/13504869500000005](https://doi.org/10.1080/13504869500000005)
+6. Feller, W. (1951). Two singular diffusion problems. *Annals of Mathematics*, 54(1), 173–182. [doi:10.2307/1969318](https://doi.org/10.2307/1969318)
+
+*Figures and simulations in this post are my own, made with Python (NumPy, SciPy, Matplotlib). All data are simulated; no market data are used.*

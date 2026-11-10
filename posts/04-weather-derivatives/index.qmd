@@ -194,4 +194,11 @@ The heatmap varies parameters that are **constant over the month**. As in Parts 
 
 *Previous:* [Part 3](../03-robust-fx-options/index.qmd) · *Next, on March 15:* [Part 5 · Building the uncertainty box from data](../05-estimating-the-box/index.qmd)
 
-**Further reading.** Alaton, Djehiche & Stillberger (2002), On modelling and pricing weather derivatives, *Applied Mathematical Finance* · Benth & Šaltytė-Benth (2007), The volatility of temperature and pricing of weather derivatives, *Quantitative Finance*.
+## References
+
+1. Alaton, P., Djehiche, B., & Stillberger, D. (2002). On modelling and pricing weather derivatives. *Applied Mathematical Finance*, 9(1), 1–20. [doi:10.1080/13504860210132897](https://doi.org/10.1080/13504860210132897)
+2. Benth, F. E., & Šaltytė Benth, J. (2007). The volatility of temperature and pricing of weather derivatives. *Quantitative Finance*, 7(5), 553–561. [doi:10.1080/14697680601155334](https://doi.org/10.1080/14697680601155334)
+3. Brody, D. C., Syroka, J., & Zervos, M. (2002). Dynamical pricing of weather derivatives. *Quantitative Finance*, 2(3), 189–198. [doi:10.1088/1469-7688/2/3/302](https://doi.org/10.1088/1469-7688/2/3/302)
+4. Efron, B. (1979). Bootstrap methods: another look at the jackknife. *Annals of Statistics*, 7(1), 1–26. [doi:10.1214/aos/1176344552](https://doi.org/10.1214/aos/1176344552)
+
+*Figures and simulations in this post are my own, made with Python (NumPy, SciPy, Matplotlib). All data are simulated; no market data are used.*
