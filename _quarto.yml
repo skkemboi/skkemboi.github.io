@@ -30,6 +30,7 @@ format:
     echo: false
     html-math-method: katex
     fig-align: center
+    include-after-body: analytics.html
 
 execute:
   freeze: auto              # plots are computed once and stored in _freeze/
