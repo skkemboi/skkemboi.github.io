@@ -2,6 +2,8 @@ name: Publish site
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "17 11 * * *"     # every day at about 5 am Chicago time
   workflow_dispatch:
 
 permissions:
@@ -19,6 +21,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install jupyter numpy scipy matplotlib
+      - run: python scripts/hide_future_posts.py
       - run: quarto render
       - uses: actions/upload-pages-artifact@v3
         with:
