@@ -1,0 +1,227 @@
+---
+title: "Where does the uncertainty box come from?"
+subtitle: "Part 5 · From data to parameter intervals with maximum likelihood"
+description: "Exact maximum likelihood for the CIR model, confidence regions, the nonlinear Feller check, and how a data-driven box turns into robust prices."
+date: 2027-03-15
+categories: [estimation, maximum likelihood, CIR, parameter uncertainty]
+image: thumbnail.png
+resources: [thumbnail.png]
+---
+
+```{python}
+#| include: false
+import numpy as np, matplotlib.pyplot as plt
+from scipy import stats, optimize
+plt.rcParams.update({"figure.figsize": (8, 4), "axes.spines.top": False, "axes.spines.right": False,
+                     "axes.grid": True, "grid.alpha": .25, "font.size": 11, "savefig.dpi": 150})
+NAVY, ORANGE, TEAL, GREY = "#1f3a5f", "#d9822b", "#2a9d8f", "#9ca3af"
+rng = np.random.default_rng(2027)
+```
+
+In [Part 2](../02-nonlinear-affine/index.qmd) we simply *declared* an uncertainty box for the CIR parameters and computed robust bond prices from it. In [Part 4](../04-weather-derivatives/index.qmd) we built intervals with a bootstrap. This post does it properly for the CIR model: **exact maximum likelihood**, **confidence regions**, and the step that turns a region into a box that the nonlinear affine framework can use.
+
+## Step 1 · The data
+
+We simulate 10 years of **weekly** short-rate observations from a CIR model with known parameters ($\kappa = 0.5$, $\theta = 3\%$, $\sigma = 0.09$), so we can see how close our estimates get.
+
+```{python}
+#| label: fig-data
+#| fig-cap: "Ten years of simulated weekly short rates from the CIR model (κ = 0.5, θ = 3%, σ = 0.09). Simulated exactly from the non-central chi-square transition, so there is no discretization error."
+def sim_exact(kappa, theta, sigma, r0, n, dt, rng):
+    c = sigma**2 * (1 - np.exp(-kappa * dt)) / (4 * kappa); df = 4 * kappa * theta / sigma**2
+    r = np.empty(n + 1); r[0] = r0
+    for k in range(n):
+        r[k + 1] = c * rng.noncentral_chisquare(df, r[k] * np.exp(-kappa * dt) / c)
+    return r
+
+true = (0.5, 0.03, 0.09); dt = 1 / 52
+r10 = sim_exact(*true, 0.03, 52 * 10, dt, rng)
+r40 = sim_exact(*true, 0.03, 52 * 40, dt, rng)
+t = np.arange(len(r10)) * dt
+plt.plot(t, 100 * r10, color=NAVY, lw=1); plt.axhline(3, color=ORANGE, ls="--", lw=1.2)
+plt.xlabel("years"); plt.ylabel("short rate (%)"); plt.show()
+```
+
+## Step 2 · The exact likelihood
+
+For CIR the distribution of next week's rate given this week's is known exactly. It is a scaled **non-central chi-square** (we checked this by simulation in [Part 1](../01-cir-from-coin-flips/index.qmd)). With $c = \dfrac{2\kappa}{\sigma^2(1-e^{-\kappa\Delta})}$,
+
+$$
+2c\, r_{t+\Delta} \;\Big|\; r_t \;\sim\; \chi'^2\!\Big(\text{df}=\tfrac{4\kappa\theta}{\sigma^2},\ \text{nc}=2c\,r_t e^{-\kappa\Delta}\Big).
+$$
+
+So the log-likelihood of the whole sample is a sum of known log-densities, and we maximize it. We enforce the **Feller condition** $2\kappa\theta \ge \sigma^2$ as a hard constraint (SLSQP), because a fitted model that lets rates hit zero would be inconsistent with the positivity we rely on later.
+
+```{python}
+def loglik(p, r, dt):
+    kappa, theta, sigma = p
+    if kappa <= 0 or theta <= 0 or sigma <= 0: return -1e12
+    c = 2 * kappa / (sigma**2 * (1 - np.exp(-kappa * dt)))
+    ll = stats.ncx2.logpdf(2 * c * r[1:], 4 * kappa * theta / sigma**2, 2 * c * r[:-1] * np.exp(-kappa * dt)) + np.log(2 * c)
+    return np.sum(ll) if np.all(np.isfinite(ll)) else -1e12
+
+def mle(r, dt, start=(0.3, 0.04, 0.1)):
+    cons = [{"type": "ineq", "fun": lambda p: 2 * p[0] * p[1] - p[2]**2}]   # hard Feller constraint
+    res = optimize.minimize(lambda p: -loglik(p, r, dt), start, method="SLSQP",
+                            bounds=[(1e-3, 10), (1e-4, 0.3), (1e-3, 1)], constraints=cons)
+    return res.x, -res.fun
+
+p10, ll10 = mle(r10, dt); p40, ll40 = mle(r40, dt)
+```
+
+| | κ (speed) | θ (level) | σ (noise) |
+|---|---|---|---|
+| **truth** | 0.500 | 3.00% | 0.0900 |
+| **MLE, 10 years** | `{python} f"{p10[0]:.3f}"` | `{python} f"{100*p10[1]:.2f}%"` | `{python} f"{p10[2]:.4f}"` |
+| **MLE, 40 years** | `{python} f"{p40[0]:.3f}"` | `{python} f"{100*p40[1]:.2f}%"` | `{python} f"{p40[2]:.4f}"` |
+
+The noise $\sigma$ is pinned down almost exactly even with 10 years, because every weekly move carries information about it. The speed $\kappa$ and level $\theta$ are much harder, because they are about the *long run*, and 10 years contains only a few "long runs".
+
+## Step 3 · How sure are we about κ? The profile likelihood
+
+Fix $\kappa$ at a value, re-optimize the other two parameters, and record the best log-likelihood. Plotting this **profile likelihood** shows how quickly the fit gets worse as $\kappa$ moves away from its estimate. The values within 1.92 log-likelihood units of the peak form a 95% confidence interval (a likelihood-ratio interval).
+
+```{python}
+def profile_kappa(r, dt, grid, p_hat):
+    out = []
+    for k in grid:
+        cons = [{"type": "ineq", "fun": lambda q, k=k: 2 * k * q[0] - q[1]**2}]
+        res = optimize.minimize(lambda q: -loglik((k, q[0], q[1]), r, dt), p_hat[1:], method="SLSQP",
+                                bounds=[(1e-4, 0.3), (1e-3, 1)], constraints=cons)
+        out.append(-res.fun)
+    return np.array(out)
+
+kgrid = np.linspace(0.02, 3.0, 90)
+prof10 = profile_kappa(r10, dt, kgrid, p10) - ll10
+prof40 = profile_kappa(r40, dt, kgrid, p40) - ll40
+cut = -stats.chi2.ppf(0.95, 1) / 2
+ci = lambda prof: (kgrid[prof >= cut].min(), kgrid[prof >= cut].max())
+fmt_ci = lambda c: f"[{'≤ ' if c[0] <= kgrid[0] else ''}{c[0]:.2f}, {'≥ ' if c[1] >= kgrid[-1] else ''}{c[1]:.2f}]"
+ci10, ci40 = ci(prof10), ci(prof40)
+```
+
+```{python}
+#| label: fig-profile
+#| fig-cap: "Profile log-likelihood for κ with 10 and 40 years of weekly data. The 95% interval is where each curve stays above the dashed line. With 10 years the curve is so flat that the interval runs off the plotted range; with 40 years it becomes a proper interval."
+plt.plot(kgrid, prof10, color=NAVY, lw=2.2, label=f"10 years: 95% CI {fmt_ci(ci10)}")
+plt.plot(kgrid, prof40, color=TEAL, lw=2.2, label=f"40 years: 95% CI {fmt_ci(ci40)}")
+plt.axhline(cut, color=ORANGE, ls="--", lw=1.5); plt.axvline(0.5, color=GREY, ls=":", lw=1.5)
+plt.text(0.51, -7.3, "truth", color=GREY)
+plt.ylim(-8, 0.5); plt.xlabel("κ"); plt.ylabel("log-likelihood relative to peak"); plt.legend(fontsize=9); plt.show()
+```
+
+## Step 4 · A joint confidence region
+
+Parameters are uncertain *together*. A faster pull ($\kappa$) can be partly traded off against a different level ($\theta$) without hurting the fit. The joint likelihood-ratio region (with $\sigma$ profiled out) shows this.
+
+```{python}
+#| label: fig-region
+#| fig-cap: "95% joint confidence region for (κ, θ) from 10 years of data (shaded), with the box that encloses it (dashed). The box is what the nonlinear affine framework needs; it is more conservative than the region."
+def region(r, ll_hat, kk, tt):
+    LL = np.empty((len(tt), len(kk)))
+    for i, th in enumerate(tt):
+        for j, k in enumerate(kk):
+            res = optimize.minimize_scalar(lambda s: -loglik((k, th, s), r, dt),
+                                           bounds=(1e-3, min(np.sqrt(2 * k * th), 1)), method="bounded")
+            LL[i, j] = -res.fun - ll_hat
+    return LL
+
+def sigma_ci(r, p_hat, ll_hat):
+    keep = []
+    for sg in np.linspace(0.07, 0.11, 81):
+        res = optimize.minimize(lambda q: -loglik((q[0], q[1], sg), r, dt), p_hat[:2], method="SLSQP",
+                                bounds=[(1e-3, 5), (1e-4, 0.3)],
+                                constraints=[{"type": "ineq", "fun": lambda q, sg=sg: 2 * q[0] * q[1] - sg**2}])
+        if -res.fun - ll_hat >= cut: keep.append(sg)
+    return min(keep), max(keep)
+
+def make_box(LL, kk, tt, sci):
+    ins = LL >= cut2; K_, T_ = np.meshgrid(kk, tt)
+    return dict(b0=((K_ * T_)[ins].min(), (K_ * T_)[ins].max()), b1=(-K_[ins].max(), -K_[ins].min()),
+                a=(sci[0]**2, sci[1]**2)), ins
+
+cut2 = -stats.chi2.ppf(0.95, 2) / 2
+kk = np.linspace(0.03, 1.8, 45); tt = np.linspace(0.005, 0.07, 45)
+LL = region(r10, ll10, kk, tt)
+box, inside = make_box(LL, kk, tt, sigma_ci(r10, p10, ll10))
+K_, T_ = np.meshgrid(kk, tt)
+box_k = (K_[inside].min(), K_[inside].max()); box_t = (T_[inside].min(), T_[inside].max())
+
+fig, ax = plt.subplots(figsize=(7.5, 4.4))
+ax.contourf(kk, 100 * tt, inside.astype(float), levels=[.5, 1.5], colors=[ORANGE], alpha=.3)
+ax.contour(kk, 100 * tt, LL, levels=[cut2], colors=[ORANGE], linewidths=1.8)
+ax.add_patch(plt.Rectangle((box_k[0], 100 * box_t[0]), box_k[1] - box_k[0], 100 * (box_t[1] - box_t[0]), fill=False, ls="--", ec=NAVY, lw=1.6))
+ax.plot(*[0.5, 3.0], "*", color=NAVY, ms=12, label="truth"); ax.plot(p10[0], 100 * p10[1], "o", color=ORANGE, ms=7, label="MLE")
+ax.set_xlabel("κ (speed)"); ax.set_ylabel("θ (level, %)"); ax.legend(fontsize=9); plt.show()
+```
+
+With only 10 years the region is also **open-ended**: it runs off the top and right of the plotted grid, so the data cannot rule out very fast or very high-level models. The box therefore has to be capped (here at κ ≤ 1.8 and θ ≤ 7%), and that cap is a modelling choice, not something the data decided.
+
+The region is also **curved**: high-$\kappa$ models need $\theta$ close to the sample average, while slow models tolerate a wide range of long-run levels. That is the statistical reason $\kappa$ and $\theta$ are hard to separate.
+
+## Step 5 · From region to box, and the nonlinear Feller check
+
+The nonlinear affine framework works with independent intervals for $b_0 = \kappa\theta$, $b_1 = -\kappa$ and $a = \sigma^2$. Taking the extremes of $\kappa\theta$ and $\kappa$ over the joint region, and the 95% profile-likelihood interval for $\sigma$, gives the box:
+
+```{python}
+feller_ok = 2 * box["b0"][0] >= box["a"][1]
+```
+
+| | lower | upper |
+|---|---|---|
+| $b_0 = \kappa\theta$ | `{python} f"{box['b0'][0]:.4f}"` | `{python} f"{box['b0'][1]:.4f}"` |
+| $b_1 = -\kappa$ | `{python} f"{box['b1'][0]:.3f}"` | `{python} f"{box['b1'][1]:.3f}"` |
+| $a = \sigma^2$ | `{python} f"{box['a'][0]:.5f}"` | `{python} f"{box['a'][1]:.5f}"` |
+
+**Nonlinear Feller check:** we need $2\underline b_0 \ge \overline a$, that is, the weakest upward pull must beat the strongest noise. Here 2 × (lowest b₀) = `{python} f"{2*box['b0'][0]:.5f}"` against the largest a = `{python} f"{box['a'][1]:.5f}"`, so the condition **`{python} "holds" if feller_ok else "fails"`**.
+
+```{python}
+#| output: asis
+if feller_ok:
+    print("Every model in the box keeps rates strictly positive, so the box can be used as it is.")
+else:
+    print("Even though every *individual* fitted model satisfies Feller, the box as a whole does not: combining "
+          "the weakest drift with the strongest noise produces a model that can touch zero. In practice we either "
+          "trim the box (shrink the lower end of $b_0$'s range until the condition holds) or accept that the rate may touch zero "
+          "in the worst case. This is a genuinely new issue that only appears once parameters are uncertain.")
+```
+
+## Step 6 · From the box to robust prices
+
+In Part 2 we saw that for zero-coupon bonds the robust bounds are attained at the corners of the box: the upper price at the weakest drift and strongest noise, the lower price at the opposite corner. So we can turn the data-driven box straight into robust bond prices and compare 10 years of data with 40.
+
+```{python}
+#| label: fig-bands
+#| fig-cap: "Robust zero-coupon bond price bands built from the 95% boxes estimated with 10 years (orange) and 40 years (teal) of weekly data. The 10-year box is capped by the grid limits of Step 4, so its band is partly a modelling choice. More data narrows the band dramatically, but even 40 years leaves real model risk at long maturities."
+def cir_bond(b0, b1, a, r0, tau):
+    kappa = -b1; theta = b0 / kappa; g_ = np.sqrt(kappa**2 + 2 * a)
+    e = np.exp(g_ * tau) - 1; den = (g_ + kappa) * e + 2 * g_
+    B = 2 * e / den; A = (2 * g_ * np.exp((kappa + g_) * tau / 2) / den) ** (2 * kappa * theta / a)
+    return A * np.exp(-B * r0)
+
+box10 = box
+kk40 = np.linspace(0.05, 1.2, 30); tt40 = np.linspace(0.01, 0.05, 30)
+box40, _ = make_box(region(r40, ll40, kk40, tt40), kk40, tt40, sigma_ci(r40, p40, ll40))
+tau = np.linspace(0.05, 10, 200); r0 = 0.03
+for bx, col, lab in [(box10, ORANGE, "10 years"), (box40, TEAL, "40 years")]:
+    up = cir_bond(bx["b0"][0], bx["b1"][0], bx["a"][1], r0, tau); dn = cir_bond(bx["b0"][1], bx["b1"][1], bx["a"][0], r0, tau)
+    plt.fill_between(tau, dn, up, color=col, alpha=.3, label=f"robust band, {lab}")
+plt.plot(tau, cir_bond(true[0] * true[1], -true[0], true[2]**2, r0, tau), color=NAVY, lw=2, label="true model")
+plt.xlabel("maturity (years)"); plt.ylabel("bond price ($)"); plt.legend(fontsize=9); plt.show()
+```
+
+```{python}
+#| include: false
+fig, ax = plt.subplots(figsize=(6, 3.4))
+ax.contourf(kk, tt, inside.astype(float), levels=[.5, 1.5], colors=[ORANGE], alpha=.4)
+ax.contour(kk, tt, LL, levels=[cut2, cut2 / 3], colors=[NAVY, NAVY], linewidths=1.2); ax.axis("off")
+fig.savefig("thumbnail.png", bbox_inches="tight"); plt.close(fig)
+```
+
+::: {.takeaway}
+**Recap, step by step.** Exact CIR likelihood (Step 2) → profile likelihood shows how badly κ is identified (Step 3) → the joint region is curved (Step 4) → enclose it in a box and run the nonlinear Feller check (Step 5) → the box becomes a robust price band, which narrows with more data but never disappears (Step 6).
+
+**Next:** the final post of this series puts the pieces together, with a robust stochastic-volatility model for currency options.
+:::
+
+*Previous:* [Part 4](../04-weather-derivatives/index.qmd) · *Next, on April 15:* [Part 6 · Robust stochastic volatility for FX options](../06-robust-heston-fx/index.qmd)

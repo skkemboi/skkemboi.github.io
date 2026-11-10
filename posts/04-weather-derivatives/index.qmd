@@ -1,0 +1,197 @@
+---
+title: "Pricing the weather"
+subtitle: "Part 4 · Temperature models, degree days, and what parameter uncertainty does to a winter contract"
+description: "How a heating-degree-day option works, how to model daily temperature, and how much the price moves when the model's parameters are uncertain."
+date: 2027-02-15
+categories: [weather derivatives, mean reversion, parameter uncertainty]
+image: thumbnail.png
+resources: [thumbnail.png]
+---
+
+```{python}
+#| include: false
+import numpy as np, matplotlib.pyplot as plt
+plt.rcParams.update({"figure.figsize": (8, 4), "axes.spines.top": False, "axes.spines.right": False,
+                     "axes.grid": True, "grid.alpha": .25, "font.size": 11, "savefig.dpi": 150})
+NAVY, ORANGE, TEAL, GREY = "#1f3a5f", "#d9822b", "#2a9d8f", "#9ca3af"
+rng = np.random.default_rng(15)
+```
+
+So far this series has priced interest-rate and currency products. Now we price something you can feel: **the weather**. A cold January costs a gas utility money in one direction and a heating-oil retailer money in the other. Weather derivatives let them trade that risk. As we'll see, the same mean-reverting ideas from [Part 1](../01-cir-from-coin-flips/index.qmd) and the same parameter-uncertainty questions from [Part 2](../02-nonlinear-affine/index.qmd) apply.
+
+## Step 1 · What daily temperature looks like
+
+Daily average temperature has three ingredients: a **seasonal cycle** (cold January, hot July), a **slow trend** (warming), and **day-to-day noise** that is *persistent*. A cold day is usually followed by another cold day.
+
+The data below are **synthetic**, generated to resemble a Midwest city such as Champaign, Illinois, so that we know the true model and can check our estimates.
+
+```{python}
+#| label: fig-temps
+#| fig-cap: "Three years of simulated daily average temperatures (thin line) and the seasonal mean (thick line). Winters are colder and also more variable than summers."
+years = 30; n = 365 * years; d = np.arange(n); doy = d % 365
+true = dict(A=52.0, B=0.0001, C=24.0, kappa=0.25, s0=7.0, s1=2.5)
+mean = lambda d, A, B, C: A + B * d + C * np.cos(2 * np.pi * ((d % 365) - 200) / 365)
+sig = lambda doy, s0, s1: s0 + s1 * np.cos(2 * np.pi * (doy - 15) / 365)
+X = np.zeros(n)
+for k in range(n - 1):
+    X[k + 1] = (1 - true["kappa"]) * X[k] + sig(doy[k + 1], true["s0"], true["s1"]) * rng.standard_normal()
+temp = mean(d, true["A"], true["B"], true["C"]) + X
+
+w = slice(n - 3 * 365, n)
+plt.plot(d[w] / 365, temp[w], color=GREY, lw=.6, label="daily average")
+plt.plot(d[w] / 365, mean(d[w], true["A"], true["B"], true["C"]), color=NAVY, lw=2.2, label="seasonal mean")
+plt.axhline(65, color=ORANGE, ls="--", lw=1.2); plt.text(d[w][0] / 365, 66.5, "65°F reference", color=ORANGE, fontsize=9)
+plt.xlabel("year"); plt.ylabel("temperature (°F)"); plt.legend(loc="lower right", fontsize=9); plt.show()
+```
+
+## Step 2 · Turning temperature into money: degree days
+
+The market does not trade temperature directly. It trades **heating degree days (HDD)**. Each day contributes how far the temperature falls *below* 65°F, the point at which buildings start to need heating:
+
+$$
+\text{HDD}_{\text{day}} = \max(65 - T_{\text{day}},\ 0), \qquad \text{HDD}_{\text{January}} = \sum_{\text{days in Jan}} \text{HDD}_{\text{day}} .
+$$
+
+A cold January has a large HDD total. Exchange-traded contracts typically pay a fixed dollar amount per degree day, and we use **\$20 per HDD**, the standard tick size for CME weather futures.
+
+```{python}
+#| label: fig-hdd
+#| fig-cap: "January HDD totals in each of the 30 simulated years. The total swings by several hundred degree days from year to year, and that swing is the risk being traded."
+jan = [(y * 365 + np.arange(31)) for y in range(years)]
+hdd_hist = np.array([np.maximum(65 - temp[j], 0).sum() for j in jan])
+plt.bar(np.arange(1, years + 1), hdd_hist, color=NAVY, alpha=.8)
+plt.axhline(hdd_hist.mean(), color=ORANGE, ls="--", lw=1.5, label=f"average ≈ {hdd_hist.mean():.0f}")
+plt.xlabel("year"); plt.ylabel("January HDD"); plt.legend(); plt.show()
+```
+
+## Step 3 · The model: mean reversion around a seasonal curve
+
+We model the temperature as the seasonal mean plus a deviation $X_t$ that is pulled back toward zero:
+
+$$
+T_t = \underbrace{A + Bt + C\cos\!\Big(\tfrac{2\pi(t-t_0)}{365}\Big)}_{\text{seasonal mean}} + X_t,
+\qquad
+X_{t+1} = (1-\kappa)\,X_t + \sigma(t)\,\varepsilon_{t+1}.
+$$
+
+This is the discrete-time cousin of the Vasicek model from Part 1: $\kappa$ is the speed at which a cold or warm spell fades, and $\sigma(t)$ is a seasonal volatility. We estimate everything from the 30 years of data in three regressions: the seasonal mean, then $\kappa$ from the day-to-day deviations, then $\sigma(t)$ from the squared residuals.
+
+```{python}
+#| label: fig-fit
+#| fig-cap: "Left: the estimated persistence. Today's deviation from the seasonal mean predicts tomorrow's, with slope 1 − κ. Right: the estimated seasonal volatility (line) against the true one (dashed)."
+D = np.column_stack([np.ones(n), d, np.cos(2 * np.pi * doy / 365), np.sin(2 * np.pi * doy / 365)])
+beta, *_ = np.linalg.lstsq(D, temp, rcond=None); resid = temp - D @ beta
+x0, x1 = resid[:-1], resid[1:]
+phi = (x0 @ x1) / (x0 @ x0); kappa_hat = 1 - phi
+eps = x1 - phi * x0
+S = np.column_stack([np.ones(n - 1), np.cos(2 * np.pi * (doy[1:] - 15) / 365)])
+g, *_ = np.linalg.lstsq(S, np.abs(eps) * np.sqrt(np.pi / 2), rcond=None)
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.8))
+idx = rng.choice(n - 1, 3000, replace=False)
+axes[0].scatter(x0[idx], x1[idx], s=4, color=NAVY, alpha=.3)
+xx = np.linspace(-30, 30, 2); axes[0].plot(xx, phi * xx, color=ORANGE, lw=2, label=f"slope = {phi:.2f}  →  κ̂ = {kappa_hat:.3f}")
+axes[0].set_xlabel("deviation today (°F)"); axes[0].set_ylabel("deviation tomorrow (°F)"); axes[0].legend(fontsize=9)
+dd = np.arange(365)
+axes[1].plot(dd, g[0] + g[1] * np.cos(2 * np.pi * (dd - 15) / 365), color=NAVY, lw=2, label="estimated σ(t)")
+axes[1].plot(dd, sig(dd, true["s0"], true["s1"]), "--", color=ORANGE, lw=1.5, label="true σ(t)")
+axes[1].set_xlabel("day of year"); axes[1].set_ylabel("daily volatility (°F)"); axes[1].legend(fontsize=9)
+plt.tight_layout(); plt.show()
+```
+
+```{python}
+#| include: false
+# 95% intervals that will define the uncertainty box (bootstrap over years)
+boot_k, boot_s = [], []
+for _ in range(200):
+    ys = rng.integers(0, years, years)
+    ii = np.concatenate([np.arange(y * 365, (y + 1) * 365 - 1) for y in ys])
+    a0, a1 = resid[ii], resid[ii + 1]
+    ph = (a0 @ a1) / (a0 @ a0); e = a1 - ph * a0
+    gg, *_ = np.linalg.lstsq(S[ii], np.abs(e) * np.sqrt(np.pi / 2), rcond=None)
+    boot_k.append(1 - ph); boot_s.append(gg[0])
+k_lo, k_hi = np.percentile(boot_k, [2.5, 97.5]); s_lo, s_hi = np.percentile(boot_s, [2.5, 97.5])
+```
+
+The estimates are close to the truth, but they are still **estimates**. Resampling the 30 years (a bootstrap) gives 95% intervals of roughly **κ from `{python} f"{k_lo:.3f}"` to `{python} f"{k_hi:.3f}"`** and **baseline volatility σ₀ from `{python} f"{s_lo:.2f}"` to `{python} f"{s_hi:.2f}"` °F**.
+
+## Step 4 · Price a January HDD call
+
+A **January HDD call** with strike $K$ pays
+
+$$
+\$20 \times \max\big(\text{HDD}_{\text{January}} - K,\ 0\big).
+$$
+
+A utility buys it to be compensated if January is unusually cold. There is no traded "temperature asset" to hedge with, so the usual approach is the **expected discounted payoff** under the fitted model. We simulate 20,000 Januaries.
+
+```{python}
+def jan_hdd(kappa, s0, s1=None, M=20_000, seed=1, A=None, B=None, C=None):
+    r = np.random.default_rng(seed); s1 = g[1] if s1 is None else s1
+    start = years * 365                                    # next January
+    days = start + np.arange(31)
+    m = beta[0] + beta[1] * days + beta[2] * np.cos(2 * np.pi * (days % 365) / 365) + beta[3] * np.sin(2 * np.pi * (days % 365) / 365)
+    sd0 = s0 / np.sqrt(1 - (1 - kappa)**2)                 # stationary spread on Jan 1
+    x = sd0 * r.standard_normal(M); H = np.zeros(M)
+    for k in range(31):
+        if k > 0: x = (1 - kappa) * x + (s0 + s1 * np.cos(2 * np.pi * ((days[k] % 365) - 15) / 365)) * r.standard_normal(M)
+        H += np.maximum(65 - (m[k] + x), 0)
+    return H
+
+disc = np.exp(-0.045 * 1 / 12); tick = 20
+H = jan_hdd(kappa_hat, g[0]); K = np.round(H.mean(), -1)
+price_hat = disc * tick * np.maximum(H - K, 0).mean()
+```
+
+```{python}
+#| label: fig-payoff-dist
+#| fig-cap: "Left: simulated January HDD under the fitted model, with the strike at the average. Right: payoff of the call. The price is the (discounted) average payoff."
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.8))
+axes[0].hist(H, bins=60, color=NAVY, alpha=.75); axes[0].axvline(K, color=ORANGE, ls="--", lw=2)
+axes[0].text(K, axes[0].get_ylim()[1] * .9, f"  strike K = {K:.0f}", color=ORANGE)
+axes[0].set_xlabel("January HDD"); axes[0].set_ylabel("simulated Januaries")
+hh = np.linspace(H.min(), H.max(), 200)
+axes[1].plot(hh, tick * np.maximum(hh - K, 0) / 1000, color=NAVY, lw=2.2)
+axes[1].set_xlabel("January HDD"); axes[1].set_ylabel("payoff ($ thousands)")
+axes[1].set_title(f"model price ≈ ${price_hat:,.0f}", fontsize=11)
+plt.tight_layout(); plt.show()
+```
+
+## Step 5 · The same price across the uncertainty box
+
+Now the question of this blog. The two parameters that matter most are **persistence** ($\kappa$) and **volatility** ($\sigma_0$). Both are only known within the intervals of Step 3. How much does the price move as they vary inside that box?
+
+```{python}
+#| label: fig-heatmap
+#| fig-cap: "HDD call price for every (κ, σ₀) combination in the 95% box. Slower mean reversion (smaller κ) lets cold spells last longer and makes the monthly total more volatile, and higher σ₀ does the same. The worst case sits in a corner."
+kg = np.linspace(k_lo, k_hi, 15); sg = np.linspace(s_lo, s_hi, 15)
+P = np.array([[disc * tick * np.maximum(jan_hdd(k, s) - K, 0).mean() for k in kg] for s in sg])
+fig, ax = plt.subplots(figsize=(7.5, 4.6))
+im = ax.pcolormesh(kg, sg, P, shading="auto", cmap="YlOrBr")
+cs = ax.contour(kg, sg, P, colors=NAVY, linewidths=.8, levels=6); ax.clabel(cs, fmt="$%.0f", fontsize=8)
+ax.plot(kappa_hat, g[0], "o", color=NAVY, ms=8); ax.annotate("  point estimate", (kappa_hat, g[0]), color=NAVY, fontsize=9)
+plt.colorbar(im, label="price ($)"); ax.set_xlabel("κ (persistence of deviations)"); ax.set_ylabel("σ₀ (baseline volatility, °F)")
+ax.xaxis.set_major_locator(plt.MaxNLocator(5)); ax.grid(False); plt.show()
+```
+
+The price ranges from about **\$`{python} f"{P.min():,.0f}"`** to **\$`{python} f"{P.max():,.0f}"`**, compared with **\$`{python} f"{price_hat:,.0f}"`** at the point estimate. That is a swing of `{python} f"{100*(P.max()-P.min())/price_hat:.0f}"`% from estimation uncertainty alone, with thirty years of daily data.
+
+```{python}
+#| include: false
+fig, ax = plt.subplots(figsize=(6, 3.4)); ax.pcolormesh(kg, sg, P, shading="auto", cmap="YlOrBr"); ax.axis("off")
+fig.savefig("thumbnail.png", bbox_inches="tight"); plt.close(fig)
+```
+
+## Step 6 · What this does *not* yet capture
+
+The heatmap varies parameters that are **constant over the month**. As in Parts 2 and 3, the fully robust price lets nature change $\kappa$ and $\sigma$ *during* January in the most damaging way. For a payoff that depends on a running total, that means solving a nonlinear PDE in two state variables: today's deviation $X_t$ and the HDD accumulated so far. For a call, the corner of the box already gives a good first answer. For structures that are not convex in the HDD total (collars, capped swaps), the gap can matter, exactly as with the butterfly in [Part 3](../03-robust-fx-options/index.qmd).
+
+::: {.takeaway}
+**Recap, step by step.** Temperature = seasonal mean + mean-reverting noise (Steps 1, 3) → contracts settle on heating degree days (Step 2) → price by simulation under the fitted model (Step 4) → estimation uncertainty alone moves the price by about `{python} f"{100*(P.max()-P.min())/price_hat:.0f}"`% (Step 5).
+
+**Next:** where do the intervals defining the "uncertainty box" actually come from, and how do we build one carefully for the CIR model?
+:::
+
+*Previous:* [Part 3](../03-robust-fx-options/index.qmd) · *Next, on March 15:* [Part 5 · Building the uncertainty box from data](../05-estimating-the-box/index.qmd)
+
+**Further reading.** Alaton, Djehiche & Stillberger (2002), On modelling and pricing weather derivatives, *Applied Mathematical Finance* · Benth & Šaltytė-Benth (2007), The volatility of temperature and pricing of weather derivatives, *Quantitative Finance*.

@@ -1,0 +1,198 @@
+---
+title: "Robust stochastic volatility for currency options"
+subtitle: "Part 6 · Putting the pieces together: a Heston model whose variance follows a nonlinear CIR process"
+description: "Volatility that moves randomly and has uncertain parameters: a two-dimensional nonlinear PDE, price bounds for an FX butterfly, and what the series has shown."
+date: 2027-04-15
+categories: [FX options, Heston, nonlinear affine processes, robust pricing]
+image: thumbnail.png
+resources: [thumbnail.png]
+---
+
+```{python}
+#| include: false
+import numpy as np, matplotlib.pyplot as plt, itertools
+from scipy.interpolate import RegularGridInterpolator
+plt.rcParams.update({"figure.figsize": (8, 4), "axes.spines.top": False, "axes.spines.right": False,
+                     "axes.grid": True, "grid.alpha": .25, "font.size": 11, "savefig.dpi": 150})
+NAVY, ORANGE, TEAL, GREY = "#1f3a5f", "#d9822b", "#2a9d8f", "#9ca3af"
+rng = np.random.default_rng(6)
+rd, rf, T = 0.045, 0.025, 1.0
+K1, K2, K3 = 1.00, 1.10, 1.20
+fly = lambda s: np.maximum(s - K1, 0) - 2 * np.maximum(s - K2, 0) + np.maximum(s - K3, 0)
+```
+
+This is the last post in the first series. It brings together everything so far: the CIR process ([Part 1](../01-cir-from-coin-flips/index.qmd)), parameter uncertainty and nonlinear affine processes ([Part 2](../02-nonlinear-affine/index.qmd)), currency options ([Part 3](../03-robust-fx-options/index.qmd)), and data-driven uncertainty boxes ([Part 5](../05-estimating-the-box/index.qmd)).
+
+## Step 1 · What was too crude in Part 3
+
+In Part 3 we let the FX volatility be *anything* in $[6\%, 12\%]$ and allowed it to **jump instantly** from one end to the other. That gave very wide price bounds. Real volatility does not teleport. It drifts, reverts to a typical level, and moves continuously. A better model makes volatility itself a **CIR process**.
+
+## Step 2 · The Heston model for FX
+
+The exchange rate $S_t$ and its variance $v_t$ evolve as
+
+$$
+\begin{aligned}
+dS_t &= (r_d - r_f)\,S_t\,dt + \sqrt{v_t}\,S_t\,dW^1_t,\\
+dv_t &= \kappa(\theta - v_t)\,dt + \xi\sqrt{v_t}\,dW^2_t .
+\end{aligned}
+$$
+
+The second line is exactly the CIR model of Part 1, now driving the variance. For simplicity we take the two Brownian motions to be independent.
+
+```{python}
+#| label: fig-heston-paths
+#| fig-cap: "Three simulated paths of the Heston model. Top: EUR/USD. Bottom: the volatility √v, which wanders continuously around its long-run level (≈ 9%) rather than jumping between fixed values."
+n, dt = 500, 1 / 250; kap, th, xi = 1.5, 0.0081, 0.09
+fig, axes = plt.subplots(2, 1, figsize=(8, 5), sharex=True)
+for c in [NAVY, ORANGE, TEAL]:
+    S = np.empty(n + 1); v = np.empty(n + 1); S[0], v[0] = 1.10, 0.0081
+    for k in range(n):
+        z1, z2 = rng.standard_normal(2); vp = max(v[k], 0)
+        S[k + 1] = S[k] * np.exp((rd - rf - 0.5 * vp) * dt + np.sqrt(vp * dt) * z1)
+        v[k + 1] = v[k] + kap * (th - vp) * dt + xi * np.sqrt(vp * dt) * z2
+    tt = np.arange(n + 1) * dt
+    axes[0].plot(tt, S, color=c, lw=1); axes[1].plot(tt, 100 * np.sqrt(np.maximum(v, 0)), color=c, lw=1)
+axes[0].set_ylabel("EUR/USD"); axes[1].set_ylabel("volatility (%)"); axes[1].set_xlabel("years")
+axes[1].axhline(9, color="k", ls="--", lw=.8)
+plt.tight_layout(); plt.show()
+```
+
+## Step 3 · Making the variance a nonlinear CIR process
+
+Exactly as in Part 2, write the variance drift as $b_0 + b_1 v$ (so $b_0 = \kappa\theta$, $b_1 = -\kappa$) and the squared vol-of-vol as $a = \xi^2$, and let all three be uncertain:
+
+$$
+b_0 \in [0.008,\ 0.016], \qquad b_1 \in [-2.0,\ -1.0], \qquad a \in [0.06^2,\ 0.12^2].
+$$
+
+These ranges correspond to a long-run volatility between roughly 6% and 13%, a half-life of volatility shocks between about 4 and 8 months, and vol-of-vol between 6% and 12%. The **nonlinear Feller condition** $2\underline b_0 \ge \overline a$ holds ($0.016 \ge 0.0144$), so the variance stays strictly positive under every model in the family.
+
+```{python}
+lo = dict(b0=0.008, b1=-2.0, a=0.06**2); hi = dict(b0=0.016, b1=-1.0, a=0.12**2)
+```
+
+## Step 4 · The robust price solves a two-dimensional nonlinear PDE
+
+The robust upper price $\overline V(t, S, v)$ is the supremum over all parameter paths in the box. Dynamic programming turns it into a PDE in **two** state variables, written here in log-spot $x = \ln S$:
+
+$$
+\partial_\tau V = \tfrac12 v\,(\partial_{xx}V - \partial_x V) + (r_d-r_f)\,\partial_x V
++ \sup_{b_0,b_1}\,(b_0 + b_1 v)\,\partial_v V
++ \sup_{a}\,\tfrac12\, a\, v\,\partial_{vv} V - r_d V .
+$$
+
+As before, each $\sup$ just picks an endpoint depending on a sign, now at every point of the $(x, v)$ plane. We solve it with an explicit finite-difference scheme (upwinding in $v$), and compare it with the eight fixed-parameter Heston models at the corners of the box.
+
+```{python}
+def solve(lo, hi, upper=True, nx=200, nv=61, vmax=0.06, dt=2.5e-4, keep_control=False):
+    x = np.linspace(np.log(0.6), np.log(1.9), nx); dx = x[1] - x[0]
+    v = np.linspace(0, vmax, nv); dv = v[1] - v[0]
+    X, V = np.meshgrid(x, v, indexing="ij"); u = fly(np.exp(X))
+    pick = (lambda s: s > 0) if upper else (lambda s: s < 0)
+    for _ in range(int(T / dt)):
+        ux = np.zeros_like(u); ux[1:-1] = (u[2:] - u[:-2]) / (2 * dx)
+        uxx = np.zeros_like(u); uxx[1:-1] = (u[2:] - 2 * u[1:-1] + u[:-2]) / dx**2
+        uvf = np.zeros_like(u); uvf[:, :-1] = (u[:, 1:] - u[:, :-1]) / dv
+        uvb = np.zeros_like(u); uvb[:, 1:] = (u[:, 1:] - u[:, :-1]) / dv
+        uvc = np.gradient(u, dv, axis=1)
+        uvv = np.zeros_like(u); uvv[:, 1:-1] = (u[:, 2:] - 2 * u[:, 1:-1] + u[:, :-2]) / dv**2
+        b0 = np.where(pick(uvc), hi["b0"], lo["b0"]); b1 = np.where(pick(V * uvc), hi["b1"], lo["b1"])
+        a = np.where(pick(uvv), hi["a"], lo["a"])
+        drift = b0 + b1 * V; uv = np.where(drift > 0, uvf, uvb)
+        u = u + dt * (0.5 * V * (uxx - ux) + (rd - rf) * ux + drift * uv + 0.5 * a * V * uvv - rd * u)
+        u[0] = 2 * u[1] - u[2]; u[-1] = 2 * u[-2] - u[-3]; u[:, -1] = 2 * u[:, -2] - u[:, -3]
+    return (x, v, u, a) if keep_control else (x, v, u)
+
+S0 = np.linspace(0.95, 1.25, 121); v0 = 0.0081
+at = lambda x, v, u: RegularGridInterpolator((x, v), u)(np.column_stack([np.log(S0), np.full(len(S0), v0)]))
+x, v, U, a_ctrl = solve(lo, hi, True, keep_control=True); up = at(x, v, U)
+_, _, L = solve(lo, hi, False); dn = at(x, v, L)
+corners = []
+for c in itertools.product(*[(lo[k], hi[k]) for k in ("b0", "b1", "a")]):
+    p = dict(zip(("b0", "b1", "a"), c)); xx, vv, uu = solve(p, p); corners.append(at(xx, vv, uu))
+corners = np.array(corners)
+```
+
+```{python}
+#| include: false
+# Part 3 benchmark: volatility allowed to jump anywhere in [6%, 12%] (Black–Scholes–Barenblatt)
+def bsb(slo, shi, upper=True, nx=600, dt=2e-4):
+    xg = np.linspace(np.log(0.6), np.log(1.9), nx); dx = xg[1] - xg[0]; Vv = fly(np.exp(xg))
+    for _ in range(int(T / dt)):
+        Vx = np.gradient(Vv, dx); Vxx = np.zeros(nx); Vxx[1:-1] = (Vv[2:] - 2 * Vv[1:-1] + Vv[:-2]) / dx**2
+        gm = Vxx - Vx; sg = np.where(gm >= 0, shi, slo) if upper else np.where(gm >= 0, slo, shi)
+        Vv = Vv + dt * (0.5 * sg**2 * (Vxx - Vx) + (rd - rf) * Vx - rd * Vv)
+        Vv[0] = 2 * Vv[1] - Vv[2]; Vv[-1] = 2 * Vv[-2] - Vv[-3]
+    return np.interp(np.log(S0), xg, Vv)
+bsb_up, bsb_dn = bsb(0.06, 0.12, True), bsb(0.06, 0.12, False)
+```
+
+## Step 5 · Price bounds for the FX butterfly
+
+We return to the butterfly from Part 3 (long the 1.00 call, short two 1.10 calls, long the 1.20 call, one year to maturity), with today's volatility at 9%.
+
+```{python}
+#| label: fig-bounds
+#| fig-cap: "Butterfly price bounds. Dashed lines: the Part 3 bounds, where volatility may jump anywhere in [6%, 12%]. Orange band: the robust Heston bounds from the 2D nonlinear PDE. Navy lines: the eight fixed-parameter Heston models at the corners of the box."
+plt.plot(S0, bsb_up, "--", color=GREY, lw=1.5, label="Part 3: σ jumps within [6%, 12%]"); plt.plot(S0, bsb_dn, "--", color=GREY, lw=1.5)
+plt.fill_between(S0, dn, up, color=ORANGE, alpha=.3, label="robust Heston (nonlinear CIR variance)")
+for c in corners: plt.plot(S0, c, color=NAVY, alpha=.5, lw=.9)
+plt.plot([], [], color=NAVY, alpha=.6, label="fixed-parameter Heston (8 corners)")
+plt.xlabel("EUR/USD today"); plt.ylabel("butterfly price ($ per €)"); plt.legend(fontsize=9); plt.show()
+j = np.argmin(abs(S0 - 1.10))
+```
+
+At EUR/USD = 1.10:
+
+| Model | Lower | Upper | Width |
+|---|---|---|---|
+| Fixed-parameter Heston, best/worst corner | `{python} f"{corners.min(0)[j]:.4f}"` | `{python} f"{corners.max(0)[j]:.4f}"` | `{python} f"{corners.max(0)[j]-corners.min(0)[j]:.4f}"` |
+| **Robust Heston (this post)** | **`{python} f"{dn[j]:.4f}"`** | **`{python} f"{up[j]:.4f}"`** | **`{python} f"{up[j]-dn[j]:.4f}"`** |
+| Part 3: volatility jumps in [6%, 12%] | `{python} f"{bsb_dn[j]:.4f}"` | `{python} f"{bsb_up[j]:.4f}"` | `{python} f"{bsb_up[j]-bsb_dn[j]:.4f}"` |
+
+**What to notice:**
+
+1. **The robust Heston band is much narrower than Part 3's.** Volatility now has to travel continuously through its dynamics, so nature cannot switch it instantly to the most damaging value. Modelling the dynamics, even with uncertain parameters, buys a lot of precision.
+2. **It is still wider than trying the eight corner models.** Nature's best strategy mixes corners depending on where the exchange rate and variance are, which no single fixed model can do. Stress-testing by corners understates model risk, the same lesson as Part 3, now in a realistic model.
+
+## Step 6 · Where nature switches
+
+To see *why* the robust price beats every corner, look at which vol-of-vol nature picks at each point of the $(S, v)$ plane today, for the upper price.
+
+```{python}
+#| label: fig-control
+#| fig-cap: "Nature's choice of vol-of-vol in the robust upper price, today. Orange: high (ξ = 12%), where the price is convex in the variance. Navy: low (ξ = 6%), where it is concave. The choice switches with the state, which no fixed-parameter model can reproduce."
+from matplotlib.colors import ListedColormap
+Sg = np.exp(x); sel = (Sg > 0.9) & (Sg < 1.35)
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.pcolormesh(Sg[sel], 100 * np.sqrt(v), (a_ctrl[sel].T > lo["a"]).astype(float), cmap=ListedColormap([NAVY, ORANGE]), shading="auto", alpha=.8)
+ax.axhline(9, color="w", ls="--", lw=1); ax.text(0.91, 9.4, "today's vol 9%", color="w", fontsize=9)
+for k_ in (K1, K2, K3): ax.axvline(k_, color="w", ls=":", lw=1)
+ax.set_xlabel("EUR/USD"); ax.set_ylabel("volatility √v (%)"); ax.grid(False); plt.show()
+```
+
+```{python}
+#| include: false
+fig, ax = plt.subplots(figsize=(6, 3.4))
+ax.fill_between(S0, dn, up, color=ORANGE, alpha=.4); ax.plot(S0, bsb_up, "--", color=GREY); ax.plot(S0, bsb_dn, "--", color=GREY)
+for c in corners: ax.plot(S0, c, color=NAVY, alpha=.5, lw=.8)
+ax.axis("off"); fig.savefig("thumbnail.png", bbox_inches="tight"); plt.close(fig)
+```
+
+## What this series has shown
+
+1. **Models need parameters, and parameters are uncertain** (Parts 1, 2, 5). Even long data sets leave the speed and level of mean reversion poorly identified.
+2. **Nonlinear affine processes** handle that uncertainty honestly. They price with the whole family of plausible models, and the answer comes from a nonlinear PDE (Parts 2, 3, 6).
+3. **For simple, convex products, the worst case sits at a corner** of the parameter box (bonds, plain calls, HDD calls). **For anything else it does not**, and corner stress tests understate the risk (Parts 3, 6).
+4. **Better dynamics give tighter, still honest bounds** (Part 6 vs Part 3).
+
+**Open questions I am working on:** correlation between the exchange rate and its volatility, uncertain domestic and foreign interest rates driven by their own nonlinear CIR processes, efficient numerical methods in three or more dimensions, and robust hedging strategies that go with the robust prices.
+
+::: {.takeaway}
+Thanks for reading the series. If you work on related problems, I would love to hear from you.
+:::
+
+*Previous:* [Part 5](../05-estimating-the-box/index.qmd) · *Start of series:* [Part 1](../01-cir-from-coin-flips/index.qmd)
+
+**References.** Heston (1993), *Review of Financial Studies* · Avellaneda, Levy & Parás (1995), *Applied Mathematical Finance* · Fadina, Neufeld & Schmidt (2019), *Probability, Uncertainty and Quantitative Risk*.

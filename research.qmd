@@ -12,17 +12,17 @@ Affine models such as Vasicek, Cox–Ingersoll–Ross (CIR) and Heston are the w
 
 **Questions I work on:** how to estimate the uncertainty set from data, how to check the nonlinear Feller condition (which keeps rates positive), and how to compute the price bounds efficiently.
 
-*Start here:* [Post 1](posts/01-cir-from-coin-flips/index.qmd) · [Post 2](posts/02-nonlinear-affine/index.qmd)
+*Start here:* [Part 1](posts/01-cir-from-coin-flips/index.qmd) · Part 2 arrives December 15
 
 ## 2. Robust currency option pricing
 
 A currency option depends on *two* interest rates (domestic and foreign) and on the exchange-rate volatility. My current project builds on the stochastic-volatility FX option literature, starting from Melino & Turnbull (1991), and recasts it in the nonlinear CIR framework. The goal is option price bounds that stay honest about parameter uncertainty.
 
-*Start here:* [Post 3](posts/03-robust-fx-options/index.qmd)
+*Blog posts on this:* Part 3 (January 15) and Part 6 (April 15)
 
 ## 3. Weather derivatives
 
-Temperature-based contracts (heating and cooling degree-day options) protect farms, utilities and insurers against weather risk. Temperature models are mean-reverting and seasonal, and their parameters are very uncertain, which makes them a natural next application of the same robust machinery.
+Temperature-based contracts (heating and cooling degree-day options) protect farms, utilities and insurers against weather risk. Temperature models are mean-reverting and seasonal, and their parameters are very uncertain, which makes them a natural next application of the same robust machinery. *Blog post on this:* Part 4 (February 15).
 
 ## Methods and tools
 

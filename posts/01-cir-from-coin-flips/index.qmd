@@ -174,4 +174,4 @@ fig.savefig("thumbnail.png", bbox_inches="tight"); plt.close(fig)
 Everything here assumed we *know* $\kappa$, $\theta$ and $\sigma$. **In the next post** we ask what happens when we don't, and that is where my research begins.
 :::
 
-*Next:* [Part 2 · What if we don't know the parameters?](../02-nonlinear-affine/index.qmd)
+*Next, on December 15:* [Part 2 · What if we don't know the parameters?](../02-nonlinear-affine/index.qmd)

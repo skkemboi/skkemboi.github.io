@@ -2,7 +2,7 @@
 title: "Pricing currency options when the model is uncertain"
 subtitle: "Part 3 · Two interest rates, one exchange rate, and an honest price range"
 description: "A currency option from the ground up: the payoff, the Garman–Kohlhagen price, and what changes when volatility is only known to lie in a range."
-date: 2026-11-11
+date: 2027-01-15
 categories: [FX options, uncertain volatility, robust pricing]
 image: thumbnail.png
 resources: [thumbnail.png]
@@ -184,6 +184,6 @@ ax.axis("off"); fig.savefig("thumbnail.png", bbox_inches="tight"); plt.close(fig
 **The lesson of the series:** when parameters are uncertain, "try a few values" is not enough. The right answer comes from a nonlinear expectation, and affine structure is what keeps it computable.
 :::
 
-*Previous:* [Part 2](../02-nonlinear-affine/index.qmd)
+*Previous:* [Part 2](../02-nonlinear-affine/index.qmd) · *Next, on February 15:* [Part 4 · Pricing the weather](../04-weather-derivatives/index.qmd)
 
 **References.** Garman & Kohlhagen (1983), *Journal of International Money and Finance* · Avellaneda, Levy & Parás (1995), *Applied Mathematical Finance* · Melino & Turnbull (1991), *Canadian Journal of Economics* · Fadina, Neufeld & Schmidt (2019), *Probability, Uncertainty and Quantitative Risk*.

@@ -2,7 +2,7 @@
 title: "What if we don't know the parameters?"
 subtitle: "Part 2 · From one CIR model to a whole family: nonlinear affine processes"
 description: "Estimated parameters are uncertain. Instead of pretending otherwise, we price with every plausible parameter at once and get an honest interval of prices."
-date: 2026-11-10
+date: 2026-12-15
 categories: [parameter uncertainty, nonlinear affine processes, bond pricing]
 image: thumbnail.png
 resources: [thumbnail.png]
@@ -225,6 +225,6 @@ ax.axis("off"); fig.savefig("thumbnail.png", bbox_inches="tight"); plt.close(fig
 **Next:** the same idea applied to currency options, where the payoff shape makes the robust answer genuinely different from any single model.
 :::
 
-*Previous:* [Part 1](../01-cir-from-coin-flips/index.qmd) · *Next:* [Part 3 · Pricing currency options under uncertainty](../03-robust-fx-options/index.qmd)
+*Previous:* [Part 1](../01-cir-from-coin-flips/index.qmd) · *Next, on January 15:* [Part 3 · Pricing currency options under uncertainty](../03-robust-fx-options/index.qmd)
 
 **Reference:** T. Fadina, A. Neufeld, T. Schmidt (2019). Affine processes under parameter uncertainty. *Probability, Uncertainty and Quantitative Risk* 4:5.
